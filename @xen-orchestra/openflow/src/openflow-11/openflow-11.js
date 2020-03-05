@@ -2,7 +2,7 @@ import ofVersion from '../version'
 
 // =============================================================================
 
-// See OpenFlow 1.1 spec: https://www.opennetworking.org/wp-content/uploads/2013/07/openflow-spec-v1.0.1.pdf
+// See OpenFlow 1.1 spec: https://www.opennetworking.org/wp-content/uploads/2014/10/openflow-spec-v1.1.0.pdf
 export default {
   version: ofVersion.openFlow11,
 
@@ -19,30 +19,27 @@ export default {
     max: 0xffffff00, // Maximum number of physical switch ports
 
     // Fake output "ports"
-    in_port: 0xfffffff8
+    in_port: 0xfffffff8,
     /* Send the packet out the input port.
      * This virtual port must be explicitly used
      * in order to send back out of the input port.
-     */,
-    table: 0xfffffff9
+     */ table: 0xfffffff9,
     /* Submit the packet to the first flow table.
      * NB: This destination port can only be
      * used in packet-out messages.
-     */,
-    normal: 0xfffffffa, // Process with normal L2/L3 switching.
-    flood: 0xfffffffb
+     */ normal: 0xfffffffa, // Process with normal L2/L3 switching.
+    flood: 0xfffffffb,
     /* All physical ports in VLAN, except input
      * port and those blocked or link down.
-     */,
-    all: 0xfffffffc, // All physical ports except input port
+     */ all: 0xfffffffc, // All physical ports except input port
     contorller: 0xfffffffd, // Send to controller
     local: 0xfffffffe, // Local openflow "port"
-    any: 0xffffffff
+    any: 0xffffffff,
     /* Wildcard port used only for flow mod
      * (delete) and flow stats requests. Selects
      * all flows regardless of output port
      * (including flows with no output port).
-     */,
+     */
   },
 
   type: {
@@ -95,10 +92,10 @@ export default {
     fragMask: 3,
 
     // TTL processing - applicable for IP and MPLS packets */
-    invalidTtlToController: 1 << 2
+    invalidTtlToController: 1 << 2,
     /* Send packets with invalid TTL
      * ie. 0 or 1 to controller
-     */,
+     */
   },
 
   /* Flags to indicate behavior of the flow table for unmatched packets.
@@ -107,11 +104,10 @@ export default {
    */
   tableConfig: {
     controller: 0,
-    continue: 1 << 0
+    continue: 1 << 0,
     /* Continue to the next table in the
      * pipeline (OpenFlow 1.0 behavior).
-     */,
-    drop: 1 << 1,
+     */ drop: 1 << 1,
     mask: 3,
   },
 
@@ -255,11 +251,10 @@ export default {
    * special conditions.
    */
   vlanId: {
-    any: 0xfffe
+    any: 0xfffe,
     /* Indicate that a VLAN id is set but don't care about it's value.
      * Note: only valid when specifying the VLAN id in a match
-     */,
-    none: 0xffff, // No VLAN id was set
+     */ none: 0xffff, // No VLAN id was set
   },
 
   /* The match type indicates the match structure (set of fields that compose the
@@ -302,10 +297,10 @@ export default {
 
     // Fake groups
     all: 0xfffffffc, // Represents all groups for group delete commands
-    any: 0xffffffff
+    any: 0xffffffff,
     /* Wildcard group used only for flow stats requests.
      * Selects all flows regardless of group (including flows with no group).
-     */,
+     */
   },
 
   // Values in the range [128, 255] are reserved for experimental use.
@@ -397,15 +392,13 @@ export default {
     badType: 0, // Unsupported match type specified by the match/
     badLen: 1, // Length problem in match
     badTag: 2, // Match uses an unsupported tag/encap
-    badDlAddrMask: 3
+    badDlAddrMask: 3,
     /* Unsupported datalink addr mask - switch does
      * not support arbitrary datalink address mask
-     */,
-    badNwAddrMask: 4
+     */ badNwAddrMask: 4,
     /* Unsupported network addr mask - switch does
      * not support arbitrary network address mask
-     */,
-    badWildcards: 5, // Unsupported wildcard specified in the match
+     */ badWildcards: 5, // Unsupported wildcard specified in the match
     badField: 6, // Unsupported field in the match
     badValue: 7, // Unsupported value in a match field
   },
@@ -425,21 +418,20 @@ export default {
   /* ofp_error_msg 'code' values for OFPET_GROUP_MOD_FAILED. 'data' contains
    * at least the first 64 bytes of the failed request. */
   groupModFailedCode: {
-    groupExists: 0
+    groupExists: 0,
     /* Group not added because a group ADD
      * attempted to replace an already-present group.
-     */,
-    invalidGroup: 1, // Group not added because Group specified is invalid
+     */ invalidGroup: 1, // Group not added because Group specified is invalid
     weightUnsupported: 2, // Switch does not support unequal load sharing with select groups
     outOfGroups: 3, // The group table is full
     outOfBuckets: 4, // The maximum number of action buckets for a group has been exceeded
     chainingUnsupported: 5, // Switch does not support groups that forward to groups
     watchUnsupported: 6, // This group cannot watch the watch_port or watch_group specified
     loop: 7, // Group entry would cause a loop
-    unknownGroup: 8
+    unknownGroup: 8,
     /* Group not modified because a group
      * MODIFY attempted to modify a non-existent group.
-     */,
+     */
   },
 
   /* ofp_error_msg 'code' values for OFPET_PORT_MOD_FAILED. 'data' contains
