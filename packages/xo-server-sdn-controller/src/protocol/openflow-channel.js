@@ -1,57 +1,24 @@
 import createLogger from '@xen-orchestra/log'
-import oflib from 'oflib-node/lib/oflib'
-// import ofp from 'oflib-node/lib/ofp'
-import ofpp from 'oflib-node/lib/ofp-1.1/ofp'
+import openflow from '@xen-orchestra/openflow'
 import util from 'util'
-import { Stream } from 'oflib-node'
+import Stream from '@xen-orchestra/openflow/dist/stream'
 
 // =============================================================================
 
 const log = createLogger('xo:xo-server:sdn-controller:openflow-controller')
 
-const OPENFLOW_PORT = 6653
-const version = '1.1'
-
-// OpenFlow message type
-const HELLO = 'OFPT_HELLO'
-const ERROR = 'OFPT_ERROR'
-const ECHO_REQUEST = 'OFPT_ECHO_REQUEST'
-const ECHO_REPLY = 'OFPT_ECHO_REPLY'
-const PACKET_IN = 'OFPT_PACKET_IN'
-// const PACKET_OUT = 'OFPT_PACKET_OUT'
-const FEATURES_REQUEST = 'OFPT_FEATURES_REQUEST'
-const FEATURES_REPLY = 'OFPT_FEATURES_REPLY'
-const PORT_STATUS = 'OFPT_PORT_STATUS'
-const FLOW_MOD = 'OFPT_FLOW_MOD'
-const FLOW_REMOVED = 'OFPT_FLOW_REMOVED'
-const CONFIG_REQUEST = 'OFPT_GET_CONFIG_REQUEST'
-const CONFIG_REPLY = 'OFPT_GET_CONFIG_REPLY'
-
-// OpenFlow command
-const ADD = 'OFPFC_ADD'
-// const MODIFY = 'OFPFC_MODIFY'
-// const MODIFY_STRICT = 'OFPFC_MODIFY_STRICT'
-// const DELETE = 'OFPFC_DELETE'
-// const DELETE_STRICT = 'OFPFC_DELETE_STRICT'
-
-// -----------------------------------------------------------------------------
-
-const toType = {
-  [HELLO]: 'ofp_header',
-  [FEATURES_REQUEST]: 'ofp_header',
-  [ECHO_REPLY]: 'ofp_header',
-  [FLOW_MOD]: 'ofp_desc_stats',
-  [CONFIG_REQUEST]: 'ofp_switch_config',
-}
+const version = openflow.version.openFlow11
+const protocol = openflow.protocol[version]
+const OPENFLOW_PORT = protocol.sslPort
 
 // =============================================================================
 
 export class OpenFlowChannel {
   /*
   Create an SSL connection to an XCP-ng host.
-  Interact with the host's OpenVSwitch (OVS) daemon to manage its flows.
+  Interact with the host's OpenVSwitch (OVS) daemon to manage its flows with OpenFlow11.
   See:
-  - OpenFlow spec: https://www.opennetworking.org/wp-content/uploads/2013/04/openflow-spec-v1.0.0.pdf
+  - OpenFlow11 spec: https://www.opennetworking.org/wp-content/uploads/2014/10/openflow-spec-v1.1.0.pdf
   */
 
   constructor(host, tlsHelper) {
@@ -62,69 +29,79 @@ export class OpenFlowChannel {
     log.debug('New OpenFlow channel', {
       host: this.host.name_label,
     })
-
-    log.info('********************', { ofpp })
   }
 
   // ---------------------------------------------------------------------------
 
   _processMessage(message, socket) {
-    if (message.message === undefined) {
+    if (message.header === undefined) {
       log.error('Failed to get header while processing message', {
         message: util.inspect(message),
       })
       return
     }
 
-    log.info('*** MESSAGE RECEIVED', { message: message.message })
-    const ofType = message.message.header.type
+    log.info('*** MESSAGE RECEIVED', { message: message })
+    const ofType = message.header.type
     switch (ofType) {
-      case HELLO:
-        this._sendPacket(this._syncMessage(ofType, message), socket)
-        this._sendPacket(this._syncMessage(FEATURES_REQUEST, message), socket)
+      case protocol.type.hello:
+        this._sendPacket(
+          this._syncMessage(protocol.type.hello, message),
+          socket
+        )
+        this._sendPacket(
+          this._syncMessage(protocol.type.featuresRequest, message),
+          socket
+        )
         break
-      case ERROR:
+      case protocol.type.error:
         {
-          const { code, data, type } = message.message.body
-          log.error('OpenFlow error', { code, type, data: oflib.unpack(data) })
+          const { code, data, type } = message
+          log.error('OpenFlow error', {
+            code,
+            type,
+            data: openflow.toJson(data),
+          })
         }
         break
-      case ECHO_REQUEST:
-        this._sendPacket(this._syncMessage(ECHO_REPLY, message), socket)
+      case protocol.type.echoRequest:
+        this._sendPacket(
+          this._syncMessage(protocol.type.echoReply, message),
+          socket
+        )
         break
-      case PACKET_IN:
+      case protocol.type.packetIn:
         log.info('PACKET_IN')
         break
-      case FEATURES_REPLY:
+      case protocol.type.featuresReply:
         {
-          const {
-            datapath_id: dpid,
-            capabilities,
-            ports,
-          } = message.message.body
+          const { datapath_id: dpid, capabilities, ports } = message
           log.info('FEATURES_REPLY', { dpid, capabilities, ports })
-          this._sendPacket(this._syncMessage(CONFIG_REQUEST, message), socket)
+          this._sendPacket(
+            this._syncMessage(protocol.type.getConfigRequest, message),
+            socket
+          )
         }
         break
-      case CONFIG_REPLY:
+      case protocol.type.getConfigReply:
         {
-          const { flags } = message.message.body
+          const { flags } = message
           log.info('CONFIG_REPLY', { flags })
           this._addFlow(
             {
               dl_type: 'ip',
               dl_src: 'fe:ff:ff:ff:ff:ff',
-              nw_src: '192.168.5.242',
+              nw_src: '192.168.0.65',
               tp_dst: 5060,
             },
             socket
           )
         }
         break
-      case PORT_STATUS:
+      case protocol.type.portStatus:
         log.info('PORT_STATUS')
         break
-      case FLOW_REMOVED:
+      case protocol.type.flowRemoved:
         log.info('FLOW_REMOVED')
         break
       default:
@@ -135,12 +112,12 @@ export class OpenFlowChannel {
 
   _addFlow(flow, socket) {
     // TODO
-    const packet = this._flowModMessage(flow, ADD)
+    const packet = this._flowModMessage(flow, protocol.flowModCommand.add)
     this._sendPacket(packet, socket)
     log.info('*** ADDING', {
       packet,
-      actions: packet.body.instructions[0].body.actions[0],
-      match: packet.body.match,
+      actions: packet.instructions[0].actions[0],
+      match: packet.match,
     })
   }
 
@@ -152,66 +129,53 @@ export class OpenFlowChannel {
 
   _syncMessage(type, obj) {
     return {
-      version,
       header: {
+        version,
         type,
-        xid: obj.message.header.xid ?? 1,
+        length: 8,
+        xid: obj.header.xid ?? 1,
       },
-      body: {},
     }
   }
 
   _flowModMessage(flow, command, out_port = 0) {
     return {
-      version,
       header: {
-        type: FLOW_MOD,
+        version,
+        type: protocol.type.flowMod,
         length: 160,
         xid: 1,
       },
-      body: {
-        command,
-        hard_timeout: 0,
-        idle_timeout: 100,
-        priority: 0x8000,
-        out_port: 0xffff,
-        flags: ['OFPFF_SEND_FLOW_REM'],
-        match: {
-          header: {
-            type: 'OFPMT_STANDARD',
-          },
-          body: {
-            wildcards: 0,
-            in_port: 1,
-            dl_src: flow.dl_src,
-            dl_type: 2048,
-            tp_dst: flow.tp_dst,
-            nw_src: flow.nw_src,
-
-            dl_dst: '00:00:00:00:00:00',
-            nw_proto: '0.0.0.0',
-            nw_dst: '0.0.0.0',
-            tp_src: 0,
-          },
-        },
-        instructions: [
-          {
-            header: { type: 'OFPIT_WRITE_ACTIONS', len: 16 },
-            body: {
-              actions: [
-                {
-                  header: {
-                    type: 'OFPAT_OUTPUT',
-                  },
-                  body: {
-                    port: 0xffff,
-                  },
-                },
-              ],
-            },
-          },
-        ],
+      command,
+      priority: 0x8000,
+      out_port: 0,
+      flags: 0,
+      match: {
+        type: protocol.matchType.standard,
+        wildcards: 0,
+        in_port: 1,
+        dl_src: flow.dl_src,
+        dl_type: 2048,
+        tp_dst: flow.tp_dst,
+        nw_src: flow.nw_src,
+        dl_dst: '00:00:00:00:00:00',
+        nw_proto: '0.0.0.0',
+        nw_dst: '0.0.0.0',
+        tp_src: 0,
       },
+      instructions: [
+        {
+          type: protocol.instructionType.writeActions,
+          actions: [
+            /*
+            {
+              type: protocol.actionType.output,
+              port: 0,
+            },
+          */
+          ],
+        },
+      ],
     }
   }
 
@@ -246,32 +210,12 @@ export class OpenFlowChannel {
   // ---------------------------------------------------------------------------
 
   async _sendPacket(packet, socket) {
-    const size =
-      packet.header.type === FLOW_MOD
-        ? 160
-        : ofpp.sizes[toType[packet.header.type]]
-    log.info('BUFFER SIZE', { size })
-    const buf = Buffer.alloc(size)
-    packet.header.length = size
+    const buf = openflow.fromJson(packet)
 
-    const pack = oflib.pack(packet, buf, 0)
-    if ('error' in pack) {
-      log.error('Error while packing packet to send', {
-        error: util.inspect(pack),
-      })
-      return
-    }
+    log.info('*** SENDING', { data: JSON.stringify(packet), packet })
+    const unpacked = openflow.toJson(buf)
+    log.info('*** SENDING 2', { data: JSON.stringify(unpacked), unpacked })
 
-    log.info('*** SENDING', { packet, pack })
-    const unpacked = oflib.unpack(buf)
-    if (packet.header.type === FLOW_MOD) {
-      log.info('*** SENDING 2', {
-        header: unpacked.message.header,
-        match: unpacked.message.body.match,
-        instruction: unpacked.message.body.instructions[0].body,
-        actions: unpacked.message.body.instructions[0].body.actions[0],
-      })
-    }
     try {
       socket.write(buf)
     } catch (error) {
@@ -292,7 +236,7 @@ export class OpenFlowChannel {
     socket.on('data', data => {
       const msgs = this._stream.process(data)
       msgs.forEach(msg => {
-        if (msg.message !== undefined) {
+        if (msg.header !== undefined) {
           this._processMessage(msg, socket)
         } else {
           log.error('Error: Message is unparseable', { msg })
