@@ -110,7 +110,8 @@ export default {
     continue: 1 << 0,
     /* Continue to the next table in the
      * pipeline (OpenFlow 1.0 behavior).
-     */ drop: 1 << 1,
+     */
+    drop: 1 << 1,
     mask: 3,
   },
 
@@ -257,7 +258,8 @@ export default {
     any: 0xfffe,
     /* Indicate that a VLAN id is set but don't care about it's value.
      * Note: only valid when specifying the VLAN id in a match
-     */ none: 0xffff, // No VLAN id was set
+     */
+    none: 0xffff, // No VLAN id was set
   },
 
   /* The match type indicates the match structure (set of fields that compose the
@@ -398,10 +400,12 @@ export default {
     badDlAddrMask: 3,
     /* Unsupported datalink addr mask - switch does
      * not support arbitrary datalink address mask
-     */ badNwAddrMask: 4,
+     */
+    badNwAddrMask: 4,
     /* Unsupported network addr mask - switch does
      * not support arbitrary network address mask
-     */ badWildcards: 5, // Unsupported wildcard specified in the match
+     */
+    badWildcards: 5, // Unsupported wildcard specified in the match
     badField: 6, // Unsupported field in the match
     badValue: 7, // Unsupported value in a match field
   },
@@ -424,7 +428,8 @@ export default {
     groupExists: 0,
     /* Group not added because a group ADD
      * attempted to replace an already-present group.
-     */ invalidGroup: 1, // Group not added because Group specified is invalid
+     */
+    invalidGroup: 1, // Group not added because Group specified is invalid
     weightUnsupported: 2, // Switch does not support unequal load sharing with select groups
     outOfGroups: 3, // The group table is full
     outOfBuckets: 4, // The maximum number of action buckets for a group has been exceeded
