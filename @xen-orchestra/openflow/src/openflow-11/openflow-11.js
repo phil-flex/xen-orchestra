@@ -23,15 +23,18 @@ export default {
     /* Send the packet out the input port.
      * This virtual port must be explicitly used
      * in order to send back out of the input port.
-     */ table: 0xfffffff9,
+     */
+    table: 0xfffffff9,
     /* Submit the packet to the first flow table.
      * NB: This destination port can only be
      * used in packet-out messages.
-     */ normal: 0xfffffffa, // Process with normal L2/L3 switching.
+     */
+    normal: 0xfffffffa, // Process with normal L2/L3 switching.
     flood: 0xfffffffb,
     /* All physical ports in VLAN, except input
      * port and those blocked or link down.
-     */ all: 0xfffffffc, // All physical ports except input port
+     */
+    all: 0xfffffffc, // All physical ports except input port
     contorller: 0xfffffffd, // Send to controller
     local: 0xfffffffe, // Local openflow "port"
     any: 0xffffffff,
