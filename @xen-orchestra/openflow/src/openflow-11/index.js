@@ -11,30 +11,17 @@ import of from './openflow-11'
 
 // =============================================================================
 
-const FROM_JSON = {
-  [of.type.hello]: hello.fromJson,
-  [of.type.error]: error.fromJson,
-  [of.type.featuresRequest]: featuresRequest.fromJson,
-  [of.type.featuresReply]: featuresReply.fromJson,
-  [of.type.echoRequest]: echo.fromJson,
-  [of.type.echoReply]: echo.fromJson,
-  [of.type.getConfigRequest]: getConfigRequest.fromJson,
-  [of.type.getConfigReply]: switchConfig.fromJson,
-  [of.type.setConfig]: switchConfig.fromJson,
-  [of.type.flowMod]: flowMod.fromJson,
-}
-
-const TO_JSON = {
-  [of.type.hello]: hello.toJson,
-  [of.type.error]: error.toJson,
-  [of.type.featuresRequest]: featuresRequest.toJson,
-  [of.type.featuresReply]: featuresReply.toJson,
-  [of.type.echoRequest]: echo.toJson,
-  [of.type.echoReply]: echo.toJson,
-  [of.type.getConfigRequest]: getConfigRequest.toJson,
-  [of.type.getConfigReply]: switchConfig.toJson,
-  [of.type.setConfig]: switchConfig.toJson,
-  [of.type.flowMod]: flowMod.toJson,
+const MESSAGE = {
+  [of.type.hello]: hello,
+  [of.type.error]: error,
+  [of.type.featuresRequest]: featuresRequest,
+  [of.type.featuresReply]: featuresReply,
+  [of.type.echoRequest]: echo,
+  [of.type.echoReply]: echo,
+  [of.type.getConfigRequest]: getConfigRequest,
+  [of.type.getConfigReply]: switchConfig,
+  [of.type.setConfig]: switchConfig,
+  [of.type.flowMod]: flowMod,
 }
 
 // =============================================================================
@@ -46,15 +33,15 @@ export default {
 
   fromJson: object => {
     const type = object.header.type
-    assert(Object.keys(FROM_JSON).includes(String(type)))
+    assert(Object.keys(MESSAGE).includes(String(type)))
 
-    return FROM_JSON[type](object)
+    return MESSAGE[type].fromJson(object)
   },
 
   toJson: (buffer, offset = 0) => {
     const type = buffer.readUInt8(offset + of.offsets.header.type)
-    assert(Object.keys(TO_JSON).includes(String(type)))
+    assert(Object.keys(MESSAGE).includes(String(type)))
 
-    return TO_JSON[type](buffer, offset)
+    return MESSAGE[type].toJson(buffer, offset)
   },
 }

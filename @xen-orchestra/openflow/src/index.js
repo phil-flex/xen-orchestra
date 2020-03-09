@@ -6,12 +6,8 @@ import scheme from './default-header-scheme'
 
 // =============================================================================
 
-const FROM_JSON = {
-  [ofVersion.openFlow11]: of11.fromJson,
-}
-
-const TO_JSON = {
-  [ofVersion.openFlow11]: of11.toJson,
+const OPENFLOW = {
+  [ofVersion.openFlow11]: of11,
 }
 
 // =============================================================================
@@ -24,15 +20,15 @@ export default {
 
   fromJson: object => {
     const version = object.header.version
-    assert(Object.values(ofVersion).includes(version))
+    assert(Object.keys(OPENFLOW).includes(String(version)))
 
-    return FROM_JSON[version](object)
+    return OPENFLOW[version].fromJson(object)
   },
 
   toJson: (buffer, offset = 0) => {
     const version = buffer.readUInt8(offset + scheme.offsets.version)
-    assert(Object.values(ofVersion).includes(version))
+    assert(Object.keys(OPENFLOW).includes(String(version)))
 
-    return TO_JSON[version](buffer, offset)
+    return OPENFLOW[version].toJson(buffer, offset)
   },
 }

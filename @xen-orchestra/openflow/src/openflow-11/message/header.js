@@ -17,8 +17,8 @@ export default {
 
     buffer.writeUInt8(version, offset + OFFSETS.version)
     buffer.writeUInt8(type, offset + OFFSETS.type)
-    buffer.writeInt16BE(length, offset + OFFSETS.length)
-    buffer.writeInt32BE(xid, offset + OFFSETS.xid)
+    buffer.writeUInt16BE(length, offset + OFFSETS.length)
+    buffer.writeUInt32BE(xid, offset + OFFSETS.xid)
 
     return buffer
   },
