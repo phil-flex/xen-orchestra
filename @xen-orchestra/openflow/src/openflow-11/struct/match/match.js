@@ -273,7 +273,7 @@ export default {
     const wildcards = (object.wildcards = buffer.readUInt32BE(
       offset + OFFSETS.wildcards
     ))
-    if (wildcards & (WILDCARDS.inPort === 0)) {
+    if ((wildcards & WILDCARDS.inPort) === 0) {
       object.in_port = buffer.readUInt32BE(offset + OFFSETS.inPort)
     }
 
@@ -296,20 +296,20 @@ export default {
       object.dl_dst = addressParser.ethToString(buffer, offset + OFFSETS.dlDst)
     }
 
-    if (wildcards & (WILDCARDS.dlVlan === 0)) {
+    if ((wildcards & WILDCARDS.dlVlan) === 0) {
       object.dl_vlan = buffer.readUInt16BE(offset + OFFSETS.dlVlan)
     }
-    if (wildcards & (WILDCARDS.dlVlanPcp === 0)) {
+    if ((wildcards & WILDCARDS.dlVlanPcp) === 0) {
       object.dl_vlan_pcp = buffer.readUInt16BE(offset + OFFSETS.dlVlanPcp)
     }
-    if (wildcards & (WILDCARDS.dlType === 0)) {
+    if ((wildcards & WILDCARDS.dlType) === 0) {
       object.dl_type = buffer.readUInt16BE(offset + OFFSETS.dlType)
     }
 
-    if (wildcards & WILDCARDS.nwTos) {
+    if ((wildcards & WILDCARDS.nwTos) === 0) {
       object.nw_tos = buffer.readUInt8(offset + OFFSETS.nwTos)
     }
-    if (wildcards & WILDCARDS.nwProto) {
+    if ((wildcards & WILDCARDS.nwProto) === 0) {
       object.nw_proto = buffer.readUInt8(offset + OFFSETS.nwProto)
     }
 
@@ -332,17 +332,17 @@ export default {
       object.nw_dst = addressParser.ip4ToString(buffer, offset + OFFSETS.nwDst)
     }
 
-    if (wildcards & (WILDCARDS.tpSrc === 0)) {
+    if ((wildcards & WILDCARDS.tpSrc) === 0) {
       object.tp_src = buffer.readUInt16BE(offset + OFFSETS.tpSrc)
     }
-    if (wildcards & (WILDCARDS.tpDst === 0)) {
+    if ((wildcards & WILDCARDS.tpDst) === 0) {
       object.tp_dst = buffer.readUInt16BE(offset + OFFSETS.tpDst)
     }
 
-    if (wildcards & (WILDCARDS.mplsLabel === 0)) {
+    if ((wildcards & WILDCARDS.mplsLabel) === 0) {
       object.mpls_label = buffer.readUInt32BE(offset + OFFSETS.mplsLabel)
     }
-    if (wildcards & (WILDCARDS.mplsTc === 0)) {
+    if ((wildcards & WILDCARDS.mplsTc) === 0) {
       object.mpls_tc = buffer.readUInt32BE(offset + OFFSETS.mplsTc)
     }
 

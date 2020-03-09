@@ -291,7 +291,7 @@ export default {
   },
 
   flowModFlags: {
-    senfFlowRem: 1 << 0, // Send flow removed message when flow expires or is deleted
+    sendFlowRem: 1 << 0, // Send flow removed message when flow expires or is deleted
     checkOverlap: 1 << 1, // Check for overlapping entries first
   },
 

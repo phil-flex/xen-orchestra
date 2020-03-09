@@ -20,7 +20,6 @@ export default {
   toJson: (buffer, offset = 0) => {
     const header = ofHeader.toJson(buffer, offset + OFFSETS.header)
     assert(header.type === of.type.hello)
-    assert(header.size === of.sizes.hello)
 
     return { header }
   },

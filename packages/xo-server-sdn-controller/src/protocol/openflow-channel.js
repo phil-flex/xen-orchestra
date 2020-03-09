@@ -89,13 +89,20 @@ export class OpenFlowChannel {
           log.info('CONFIG_REPLY', { flags })
           this._addFlow(
             {
-              dl_type: 'ip',
-              dl_src: 'fe:ff:ff:ff:ff:ff',
               nw_src: '192.168.0.65',
               tp_dst: 5060,
             },
             socket
           )
+          setTimeout(() => {
+            this._removeFlows(
+              {
+                nw_src: '192.168.0.65',
+                tp_dst: 5060,
+              },
+              socket
+            )
+          }, 100000)
         }
         break
       case protocol.type.portStatus:
@@ -114,15 +121,13 @@ export class OpenFlowChannel {
     // TODO
     const packet = this._flowModMessage(flow, protocol.flowModCommand.add)
     this._sendPacket(packet, socket)
-    log.info('*** ADDING', {
-      packet,
-      actions: packet.instructions[0].actions[0],
-      match: packet.match,
-    })
   }
 
-  _removeFlows() {
+  _removeFlows(flow, socket) {
     // TODO
+    const packet = this._flowModMessage(flow, protocol.flowModCommand.delete)
+    packet.priority++
+    this._sendPacket(packet, socket)
   }
 
   // ---------------------------------------------------------------------------
@@ -147,21 +152,11 @@ export class OpenFlowChannel {
         xid: 1,
       },
       command,
-      priority: 0x8000,
-      out_port: 0,
-      flags: 0,
+      flags: protocol.flowModFlags.sendFlowRem,
       match: {
         type: protocol.matchType.standard,
-        wildcards: 0,
-        in_port: 1,
-        dl_src: flow.dl_src,
         dl_type: 2048,
-        tp_dst: flow.tp_dst,
         nw_src: flow.nw_src,
-        dl_dst: '00:00:00:00:00:00',
-        nw_proto: '0.0.0.0',
-        nw_dst: '0.0.0.0',
-        tp_src: 0,
       },
       instructions: [
         {
