@@ -58,7 +58,7 @@ export default {
       header,
       cookie,
       cookie_mask,
-      table_id,
+      table_id = 0,
       command,
       idle_timeout = 0,
       hard_timeout = 0,
@@ -66,7 +66,7 @@ export default {
       buffer_id = 0xffffffff,
       out_port = of.port.any,
       out_group = of.group.any,
-      flags,
+      flags = 0,
       match,
       instructions = [],
     } = object

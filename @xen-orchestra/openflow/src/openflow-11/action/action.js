@@ -42,7 +42,7 @@ export default {
     const { type } = object
     assert(Object.keys(ACTION).includes(String(type)))
 
-    return ACTION[type].fomJson(object, buffer, offset)
+    return ACTION[type].fromJson(object, buffer, offset)
   },
 
   toJson: (buffer, offset = 0) => {
