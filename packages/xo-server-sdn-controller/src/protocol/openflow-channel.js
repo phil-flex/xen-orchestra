@@ -26,6 +26,8 @@ export class OpenFlowChannel {
     this._tlsHelper = tlsHelper
     this._stream = new Stream()
 
+    this._bridge = {}
+
     log.debug('New OpenFlow channel', {
       host: this.host.name_label,
     })
@@ -46,11 +48,11 @@ export class OpenFlowChannel {
     switch (ofType) {
       case protocol.type.hello:
         this._sendPacket(
-          this._syncMessage(protocol.type.hello, message),
+          this._syncMessage(protocol.type.hello, message.header.xid),
           socket
         )
         this._sendPacket(
-          this._syncMessage(protocol.type.featuresRequest, message),
+          this._syncMessage(protocol.type.featuresRequest, message.header.xid),
           socket
         )
         break
@@ -66,7 +68,7 @@ export class OpenFlowChannel {
         break
       case protocol.type.echoRequest:
         this._sendPacket(
-          this._syncMessage(protocol.type.echoReply, message),
+          this._syncMessage(protocol.type.echoReply, message.header.xid),
           socket
         )
         break
@@ -77,8 +79,12 @@ export class OpenFlowChannel {
         {
           const { datapath_id: dpid, capabilities, ports } = message
           log.info('FEATURES_REPLY', { dpid, capabilities, ports })
+          this._bridge[dpid] = ports
           this._sendPacket(
-            this._syncMessage(protocol.type.getConfigRequest, message),
+            this._syncMessage(
+              protocol.type.getConfigRequest,
+              message.header.xid
+            ),
             socket
           )
         }
@@ -89,14 +95,29 @@ export class OpenFlowChannel {
           log.info('CONFIG_REPLY', { flags })
           this._addFlow(
             {
+              type: protocol.matchType.standard,
+              dl_type: 2048,
               nw_src: '192.168.0.65',
-              tp_dst: 5060,
+              tp_src: 5060,
             },
+            [
+              {
+                type: protocol.instructionType.applyActions,
+                actions: [
+                  {
+                    type: protocol.actionType.output,
+                    port: protocol.port.normal,
+                  },
+                ],
+              },
+            ],
             socket
           )
           setTimeout(() => {
             this._removeFlows(
               {
+                type: protocol.matchType.standard,
+                dl_type: 2048,
                 nw_src: '192.168.0.65',
                 tp_dst: 5060,
               },
@@ -117,58 +138,43 @@ export class OpenFlowChannel {
     }
   }
 
-  _addFlow(flow, socket) {
+  _addFlow(match, instructions, socket) {
     // TODO
-    const packet = this._flowModMessage(flow, protocol.flowModCommand.add)
+    const packet = this._flowModMessage(
+      protocol.flowModCommand.add,
+      match,
+      instructions
+    )
     this._sendPacket(packet, socket)
   }
 
-  _removeFlows(flow, socket) {
+  _removeFlows(match, socket) {
     // TODO
-    const packet = this._flowModMessage(flow, protocol.flowModCommand.delete)
-    packet.priority++
+    const packet = this._flowModMessage(protocol.flowModCommand.delete, match)
     this._sendPacket(packet, socket)
   }
 
   // ---------------------------------------------------------------------------
 
-  _syncMessage(type, obj) {
+  _syncMessage(type, xid = 1) {
     return {
       header: {
         version,
         type,
         length: 8,
-        xid: obj.header.xid ?? 1,
+        xid: xid,
       },
     }
   }
 
-  _flowModMessage(flow, command) {
+  _flowModMessage(command, match, instructions = []) {
+    // TODO: Do not use default priority?
     return {
-      header: {
-        version,
-        type: protocol.type.flowMod,
-        length: 160,
-        xid: 1,
-      },
+      ...this._syncMessage(protocol.type.flowMod),
       command,
       flags: protocol.flowModFlags.sendFlowRem,
-      match: {
-        type: protocol.matchType.standard,
-        dl_type: 2048,
-        nw_src: flow.nw_src,
-      },
-      instructions: [
-        {
-          type: protocol.instructionType.applyActions,
-          actions: [
-            {
-              type: protocol.actionType.output,
-              port: protocol.port.normal,
-            },
-          ],
-        },
-      ],
+      match,
+      instructions,
     }
   }
 
