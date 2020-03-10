@@ -143,7 +143,7 @@ export class OpenFlowChannel {
     }
   }
 
-  _flowModMessage(flow, command, out_port = 0) {
+  _flowModMessage(flow, command) {
     return {
       header: {
         version,
@@ -160,45 +160,15 @@ export class OpenFlowChannel {
       },
       instructions: [
         {
-          type: protocol.instructionType.writeActions,
+          type: protocol.instructionType.applyActions,
           actions: [
-            /*
             {
               type: protocol.actionType.output,
-              port: 0,
+              port: protocol.port.normal,
             },
-          */
           ],
         },
       ],
-    }
-  }
-
-  _extractFlow(packet) {
-    return {
-      dl_src: packet.shost,
-      dl_dst: packet.dhost,
-      dl_type: packet.ethertype,
-
-      dl_vlan: packet.vlan ?? 0xffff,
-      dl_vlan_pcp: packet.vlan !== undefined ? packet.priority : 0,
-
-      nw_src: packet.ip !== undefined ? packet.ip.saddr : '0.0.0.0',
-      nw_dst: packet.ip !== undefined ? packet.ip.daddr : '0.0.0.0',
-      nw_proto: packet.ip !== undefined ? packet.ip.protocol : 0,
-
-      tp_src:
-        packet.ip.tcp !== undefined || packet.ip.udp !== undefined
-          ? packet.ip.saddr
-          : packet.ip.icmp !== undefined
-          ? packet.ip.icmp.type
-          : '0.0.0.0',
-      tp_dst:
-        packet.ip.tcp !== undefined || packet.ip.udp !== undefined
-          ? packet.ip.daddr
-          : packet.ip.icmp !== undefined
-          ? packet.ip.icmp.code
-          : '0.0.0.0',
     }
   }
 
