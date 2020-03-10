@@ -161,8 +161,7 @@ export class OpenFlowChannel {
       header: {
         version,
         type,
-        length: 8,
-        xid: xid,
+        xid,
       },
     }
   }
