@@ -240,16 +240,27 @@ export default {
     all: (1 << 10) - 1, // Wildcards all fields
   },
 
-  /* Values below this cutoff are 802.3 packets and the two bytes
-   * following MAC addresses are used as a frame length.  Otherwise, the
-   * two bytes are used as the Ethernet type.
-   */
-  dlTypeEth2Cutoff: 0x0600,
+  dlType: {
+    ip: 0x0800,
+    arp: 0x0806,
 
-  /* Value of dl_type to indicate that the frame does not include an
-   * Ethernet type.
-   */
-  dlTypeNotEthType: 0x05ff,
+    /* Values below this cutoff are 802.3 packets and the two bytes
+     * following MAC addresses are used as a frame length. Otherwise, the
+     * two bytes are used as the Ethernet type.
+     */
+    eth2Cutoff: 0x0600,
+
+    /* Value of dl_type to indicate that the frame does not include an
+     * Ethernet type.
+     */
+    notEthType: 0x05ff,
+  },
+
+  nwProto: {
+    icmp: 1,
+    tcp: 6,
+    udp: 17,
+  },
 
   /* The VLAN id is 12-bits, so we can use the entire 16 bits to indicate
    * special conditions.

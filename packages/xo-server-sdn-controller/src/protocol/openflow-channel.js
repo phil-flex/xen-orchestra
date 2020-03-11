@@ -96,7 +96,9 @@ export class OpenFlowChannel {
           this._addFlow(
             {
               type: protocol.matchType.standard,
-              dl_type: 2048,
+              dl_type: protocol.dlType.ip,
+              dl_src: '96:08:d2:fc:69:19',
+              nw_proto: protocol.nwProto.tcp,
               nw_src: '192.168.0.65',
               tp_src: 5060,
             },
