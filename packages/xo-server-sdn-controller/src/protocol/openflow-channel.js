@@ -1,4 +1,5 @@
 import createLogger from '@xen-orchestra/log'
+import ipaddr from 'ipaddr.js'
 import openflow from '@xen-orchestra/openflow'
 import util from 'util'
 import Stream from '@xen-orchestra/openflow/dist/stream'
@@ -8,8 +9,25 @@ import Stream from '@xen-orchestra/openflow/dist/stream'
 const log = createLogger('xo:xo-server:sdn-controller:openflow-controller')
 
 const version = openflow.version.openFlow11
-const protocol = openflow.protocol[version]
-const OPENFLOW_PORT = protocol.sslPort
+const ofProtocol = openflow.protocol[version]
+const OPENFLOW_PORT = ofProtocol.sslPort
+
+// -----------------------------------------------------------------------------
+
+const parseIp = ipAddress => {
+  let addr, mask
+  if (ipAddress.includes('/')) {
+    const ip = ipaddr.parseCIDR(ipAddress)
+    addr = ip[0].toString()
+    const maskOctets = ipaddr.IPv4.subnetMaskFromPrefixLength(ip[1]).octets
+    mask = ipaddr.fromByteArray(maskOctets.map(i => 255 - i)).toString() // Use wildcarded mask
+  } else {
+    const ip = ipaddr.parse(ipAddress)
+    addr = ip.toString()
+  }
+
+  return { addr, mask }
+}
 
 // =============================================================================
 
@@ -35,7 +53,156 @@ export class OpenFlowChannel {
 
   // ---------------------------------------------------------------------------
 
-  _processMessage(message, socket) {
+  addRule(vif, allow, protocol, port, ipRange, direction) {
+    // TODO: use VIF to get bridge port
+
+    const instructions = [
+      {
+        type: ofProtocol.instructionType.applyActions,
+        actions: allow
+          ? [
+              {
+                type: ofProtocol.actionType.output,
+                port: ofProtocol.port.normal,
+              },
+            ]
+          : [],
+      },
+    ]
+
+    const ip = parseIp(ipRange)
+    log.info('*** -------------', { ip })
+
+    let dlType, nwProto
+    if (protocol === 'IP') {
+      dlType = ofProtocol.dlType.ip
+    } else if (protocol === 'TCP') {
+      dlType = ofProtocol.dlType.ip
+      nwProto = ofProtocol.nwProto.tcp
+    } else if (protocol === 'UDP') {
+      dlType = ofProtocol.dlType.ip
+      nwProto = ofProtocol.nwProto.udp
+    } else {
+      // ERROR?
+    }
+
+    if (direction.includes('from')) {
+      this._addFlow(
+        {
+          type: ofProtocol.matchType.standard,
+          dl_type: dlType,
+          // dl_src: TODO,
+          nw_proto: nwProto,
+          nw_dst: ip.addr,
+          nw_dst_mask: ip.mask,
+          tp_src: port,
+        },
+        instructions
+      )
+      this._addFlow(
+        {
+          type: ofProtocol.matchType.standard,
+          dl_type: dlType,
+          // dl_dst: TODO,
+          nw_proto: nwProto,
+          nw_src: ip.addr,
+          nw_src_mask: ip.mask,
+          tp_dst: port,
+        },
+        instructions
+      )
+    }
+    if (direction.includes('to')) {
+      this._addFlow(
+        {
+          type: ofProtocol.matchType.standard,
+          dl_type: dlType,
+          // dl_src: TODO,
+          nw_proto: nwProto,
+          nw_dst: ip.addr,
+          nw_dst_mask: ip.mask,
+          tp_dst: port,
+        },
+        instructions
+      )
+      this._addFlow(
+        {
+          type: ofProtocol.matchType.standard,
+          dl_type: dlType,
+          // dl_dst: TODO,
+          nw_proto: nwProto,
+          nw_src: ip.addr,
+          nw_src_mask: ip.mask,
+          tp_src: port,
+        },
+        instructions
+      )
+    }
+  }
+
+  deleteRule(vif, protocol, port, ipRange, direction) {
+    // TODO: use VIF to get bridge port
+
+    const ip = parseIp(ipRange)
+    log.info('*** -------------', { ip })
+    let dlType, nwProto
+    if (protocol === 'IP') {
+      dlType = ofProtocol.dlType.ip
+    } else if (protocol === 'TCP') {
+      dlType = ofProtocol.dlType.ip
+      nwProto = ofProtocol.nwProto.tcp
+    } else if (protocol === 'UDP') {
+      dlType = ofProtocol.dlType.ip
+      nwProto = ofProtocol.nwProto.udp
+    } else {
+      // ERROR?
+    }
+
+    if (direction.includes('from')) {
+      this._removeFlows({
+        type: ofProtocol.matchType.standard,
+        dl_type: dlType,
+        // dl_src: TODO,
+        nw_proto: nwProto,
+        nw_dst: ip.addr,
+        nw_dst_mask: ip.mask,
+        tp_src: port,
+      })
+      this._removeFlows({
+        type: ofProtocol.matchType.standard,
+        dl_type: dlType,
+        // dl_dst: TODO,
+        nw_proto: nwProto,
+        nw_src: ip.addr,
+        nw_src_mask: ip.mask,
+        tp_dst: port,
+      })
+    }
+    if (direction.includes('to')) {
+      this._removeFlows({
+        type: ofProtocol.matchType.standard,
+        dl_type: dlType,
+        // dl_src: TODO,
+        nw_proto: nwProto,
+        nw_dst: ip.addr,
+        nw_dst_mask: ip.mask,
+        tp_dst: port,
+      })
+      this._removeFlows({
+        type: ofProtocol.matchType.standard,
+        dl_type: dlType,
+        // dl_dst: TODO,
+        nw_proto: nwProto,
+        nw_src: ip.addr,
+        nw_src_mask: ip.mask,
+        tp_src: port,
+      })
+    }
+  }
+
+  // ===========================================================================
+
+  _processMessage(message) {
     if (message.header === undefined) {
       log.error('Failed to get header while processing message', {
         message: util.inspect(message),
@@ -46,94 +213,59 @@ export class OpenFlowChannel {
     log.info('*** MESSAGE RECEIVED', { message: message })
     const ofType = message.header.type
     switch (ofType) {
-      case protocol.type.hello:
+      case ofProtocol.type.hello:
         this._sendPacket(
-          this._syncMessage(protocol.type.hello, message.header.xid),
-          socket
+          this._syncMessage(ofProtocol.type.hello, message.header.xid)
         )
         this._sendPacket(
-          this._syncMessage(protocol.type.featuresRequest, message.header.xid),
-          socket
+          this._syncMessage(ofProtocol.type.featuresRequest, message.header.xid)
         )
         break
-      case protocol.type.error:
+      case ofProtocol.type.error:
         {
-          const { code, data, type } = message
+          const { code, type } = message
           log.error('OpenFlow error', {
             code,
             type,
-            data: openflow.toJson(data),
+            // data: openflow.toJson(data),
           })
         }
         break
-      case protocol.type.echoRequest:
+      case ofProtocol.type.echoRequest:
         this._sendPacket(
-          this._syncMessage(protocol.type.echoReply, message.header.xid),
-          socket
+          this._syncMessage(ofProtocol.type.echoReply, message.header.xid)
         )
         break
-      case protocol.type.packetIn:
+      case ofProtocol.type.packetIn:
         log.info('PACKET_IN')
         break
-      case protocol.type.featuresReply:
+      case ofProtocol.type.featuresReply:
         {
           const { datapath_id: dpid, capabilities, ports } = message
           log.info('FEATURES_REPLY', { dpid, capabilities, ports })
           this._bridge[dpid] = ports
           this._sendPacket(
             this._syncMessage(
-              protocol.type.getConfigRequest,
+              ofProtocol.type.getConfigRequest,
               message.header.xid
-            ),
-            socket
+            )
           )
         }
         break
-      case protocol.type.getConfigReply:
+      case ofProtocol.type.getConfigReply:
         {
           const { flags } = message
           log.info('CONFIG_REPLY', { flags })
-          this._addFlow(
-            {
-              type: protocol.matchType.standard,
-              dl_type: protocol.dlType.ip,
-              dl_src: '96:08:d2:fc:69:19',
-              nw_proto: protocol.nwProto.tcp,
-              nw_src: '192.168.0.65',
-              tp_src: 5060,
-            },
-            [
-              {
-                type: protocol.instructionType.applyActions,
-                actions: [
-                  {
-                    type: protocol.actionType.output,
-                    port: protocol.port.normal,
-                  },
-                ],
-              },
-            ],
-            socket
-          )
+          this.addRule(undefined, true, 'TCP', 5060, '192.168.42.42/17', 'from')
           setTimeout(() => {
-            this._removeFlows(
-              {
-                type: protocol.matchType.standard,
-                dl_type: protocol.dlType.ip,
-                dl_src: '96:08:d2:fc:69:19',
-                nw_proto: protocol.nwProto.tcp,
-                nw_src: '192.168.0.65',
-                tp_src: 5060,
-              },
-              socket
-            )
+            this.deleteRule(undefined, 'TCP', 5060, '192.168.42.42/17', 'from')
           }, 100000)
         }
         break
-      case protocol.type.portStatus:
+      case ofProtocol.type.portStatus:
         log.info('PORT_STATUS')
         break
-      case protocol.type.flowRemoved:
+      case ofProtocol.type.flowRemoved:
         log.info('FLOW_REMOVED')
         break
       default:
@@ -142,20 +274,20 @@ export class OpenFlowChannel {
     }
   }
 
-  _addFlow(match, instructions, socket) {
+  _addFlow(match, instructions) {
     // TODO
     const packet = this._flowModMessage(
-      protocol.flowModCommand.add,
+      ofProtocol.flowModCommand.add,
       match,
       instructions
     )
-    this._sendPacket(packet, socket)
+    this._sendPacket(packet)
   }
 
-  _removeFlows(match, socket) {
+  _removeFlows(match) {
     // TODO
-    const packet = this._flowModMessage(protocol.flowModCommand.delete, match)
-    this._sendPacket(packet, socket)
+    const packet = this._flowModMessage(ofProtocol.flowModCommand.delete, match)
+    this._sendPacket(packet)
   }
 
   // ---------------------------------------------------------------------------
@@ -173,9 +305,9 @@ export class OpenFlowChannel {
   _flowModMessage(command, match, instructions = []) {
     // TODO: Do not use default priority?
     return {
-      ...this._syncMessage(protocol.type.flowMod),
+      ...this._syncMessage(ofProtocol.type.flowMod),
       command,
-      flags: protocol.flowModFlags.sendFlowRem,
+      flags: ofProtocol.flowModFlags.sendFlowRem,
       match,
       instructions,
     }
@@ -183,7 +315,7 @@ export class OpenFlowChannel {
 
   // ---------------------------------------------------------------------------
 
-  async _sendPacket(packet, socket) {
+  async _sendPacket(packet) {
     const buf = openflow.fromJson(packet)
 
     log.info('*** SENDING', { data: JSON.stringify(packet), packet })
@@ -191,7 +323,7 @@ export class OpenFlowChannel {
     log.info('*** SENDING 2', { data: JSON.stringify(unpacked), unpacked })
 
     try {
-      socket.write(buf)
+      this._socket.write(buf)
     } catch (error) {
       log.error('Error while writing into socket', {
         error,
@@ -203,20 +335,19 @@ export class OpenFlowChannel {
   // ---------------------------------------------------------------------------
 
   async _connect() {
-    const socket = await this._tlsHelper.connect(
+    this._socket = await this._tlsHelper.connect(
       this.host.address,
       OPENFLOW_PORT
     )
-    socket.on('data', data => {
+    this._socket.on('data', data => {
       const msgs = this._stream.process(data)
       msgs.forEach(msg => {
         if (msg.header !== undefined) {
-          this._processMessage(msg, socket)
+          this._processMessage(msg)
         } else {
           log.error('Error: Message is unparseable', { msg })
         }
       })
     })
-    return socket
   }
 }
