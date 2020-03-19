@@ -14,7 +14,9 @@ import StateButton from 'state-button'
 import Tooltip from 'tooltip'
 import { Card, CardHeader, CardBlock } from 'card'
 import { confirm } from 'modal'
-import { createSelector } from 'selectors'
+import { connectStore } from 'utils'
+import { createPredicate } from 'value-matcher'
+import { createGetObjectsOfType, createSelector } from 'selectors'
 import { get } from '@xen-orchestra/defined'
 import { injectState, provideState } from 'reaclette'
 import { isEmpty, map, groupBy, some } from 'lodash'
@@ -92,12 +94,13 @@ const _deleteBackupJobs = items => {
   return deleteBackupJobs({ backupIds, metadataBackupIds })
 }
 
-const _runBackupJob = ({ id, name, schedule, type }) =>
+const _runBackupJob = ({ id, name, nVms, schedule, type }) =>
   confirm({
     title: _('runJob'),
-    body: _('runBackupNgJobConfirm', {
+    body: _('runBackupJobConfirm', {
       id: id.slice(0, 5),
       name: <strong>{name}</strong>,
+      nVms,
     }),
   }).then(() =>
     type === 'backup'
@@ -122,7 +125,17 @@ const SchedulePreviewBody = decorate([
         cb(lastRunLog)
       }),
   })),
-  ({ job, schedule, lastRunLog }) => (
+  connectStore(() => ({
+    nVms: createGetObjectsOfType('VM')
+      .filter(
+        createSelector(
+          (_, props) => props.job.vms,
+          pattern => vm => createPredicate(pattern)(vm)
+        )
+      )
+      .count(),
+  })),
+  ({ job, nVms, schedule, lastRunLog }) => (
     <Ul>
       <Li>
         {schedule.name
@@ -170,6 +183,7 @@ const SchedulePreviewBody = decorate([
             btnStyle='primary'
             data-id={job.id}
             data-name={job.name}
+            data-nVms={nVms}
             data-schedule={schedule.id}
             data-type={job.type}
             handler={_runBackupJob}
