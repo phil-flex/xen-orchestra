@@ -1052,8 +1052,6 @@ export default class Xapi extends XapiBase {
     // 2. Delete all VBDs which may have been created by the import.
     await asyncMap(vm.$VBDs, vbd => this._deleteVbd(vbd))::ignoreErrors()
 
-    const newVbds = []
-
     // 3. Create VDIs & VBDs.
     //
     // TODO: move all VDIs creation before the VM and simplify the code
@@ -1092,13 +1090,11 @@ export default class Xapi extends XapiBase {
       }
 
       await asyncMap(vbds[vdiRef], async vbd => {
-        newVbds.push(
-          await this.createVbd({
-            ...vbd,
-            vdi: newVdi,
-            vm,
-          })
-        )
+        await this.createVbd({
+          ...vbd,
+          vdi: newVdi,
+          vm,
+        })
       })
 
       return newVdi
@@ -1185,16 +1181,6 @@ export default class Xapi extends XapiBase {
         //   : null
       ),
     ])
-
-    await vm.$call('resume', false, false)
-
-    await Promise.all(
-      newVbds.map(vbd =>
-        vbd.$call('plug').catch(error => {
-          console.error('fail to plug VBD', vbd, error)
-        })
-      )
-    )
 
     return { transferSize, vm }
   }
@@ -1780,8 +1766,6 @@ export default class Xapi extends XapiBase {
     if (isVmRunning(vm)) {
       await this.callAsync('VBD.plug', vbdRef)
     }
-
-    return this.getRecord('VBD', vbdRef)
   }
 
   _cloneVdi(vdi) {
