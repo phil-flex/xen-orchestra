@@ -48,8 +48,6 @@ import transportConsole from '@xen-orchestra/log/transports/console'
 import { configure } from '@xen-orchestra/log/configure'
 import { generateToken } from './utils'
 
-//const { debug } = createLogger('xo:xo-server')
-
 // ===================================================================
 
 // https://github.com/yeojz/otplib#using-specific-otp-implementations
@@ -183,7 +181,6 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect('/xo/')
   })
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   express.get('/xo/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
       return res.redirect('/xo/signin')
@@ -600,7 +597,7 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      //log.info(`- WebSocket connection (${remoteAddress})`)
+      log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
@@ -669,6 +666,7 @@ const setUpConsoleProxy = (webServer, xo) => {
         }
 
         //const { remoteAddress } = socket
+        log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
         //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
         const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
         //debug(Object.getOwnPropertyNames(req.headers))
