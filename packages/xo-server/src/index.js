@@ -181,6 +181,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect('/xo/')
   })
 
+  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   express.get('/xo/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
       return res.redirect('/xo/signin')
@@ -235,10 +236,11 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect(303, req.flash('return-url')[0] || '/xo/')
   }
 
-  //NOTE: Duplicated -->const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/xo\/callback)?(:?\?.*)?$/
+  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/xo\/callback)?(:?\?.*)?$/
   const UNCHECKED_URL_RE = /favicon|fontawesome|images|styles|\.(?:css|jpg|png)$/
   express.use(async (req, res, next) => {
     const { url } = req
+    //debug('url: %s', url)
     if (UNCHECKED_URL_RE.test(url)) {
       return next()
     }
@@ -575,8 +577,7 @@ const setUpApi = (webServer, xo, config) => {
 
   const onConnection = (socket, upgradeReq) => {
     const { remoteAddress } = upgradeReq.socket
-    //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
-    //const remoteAddress = upgradeReq.headers['x-real-ip'] || upgradeReq.headers['x-forwarded-for'] || upgradeReq.connection.remoteAddress
+
     log.info(`+ WebSocket connection (${remoteAddress})`)
 
     // Create the abstract XO object for this connection.
@@ -589,7 +590,6 @@ const setUpApi = (webServer, xo, config) => {
     // Create the JSON-RPC server for this connection.
     const jsonRpc = new JsonRpcPeer(message => {
       if (message.type === 'request') {
-        //debug('JsonRpcPeer message: %s, %s', message.method, message.params)
         return xo.callApiMethod(connection, message.method, message.params)
       }
     })
@@ -597,14 +597,13 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      log.info(`- WebSocket connection (${remoteAddress})`)
+      //log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
 
     // Connect the WebSocket to the JSON-RPC server.
     socket.on('message', message => {
-      //debug('jsonRpc message write : %s', message)
       const expiration = connection.get('expiration', undefined)
       if (expiration !== undefined && expiration < Date.now()) {
         connection.close()
@@ -666,19 +665,12 @@ const setUpConsoleProxy = (webServer, xo) => {
         }
 
         //const { remoteAddress } = socket
-        log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
         //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
         const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
         //debug(Object.getOwnPropertyNames(req.headers))
         //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
         //debug(Object.getOwnPropertyNames(req.headers))
         debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
-        //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
-        //const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
 
         const data = {
           timestamp: Date.now(),
