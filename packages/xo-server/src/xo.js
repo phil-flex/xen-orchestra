@@ -27,9 +27,6 @@ const warn = (...args) => {
 }
 
 // ===================================================================
-
-const log = createLogger('xo:xo')
-
 @mixin(mapToArray(mixins))
 export default class Xo extends EventEmitter {
   constructor(config) {
@@ -171,8 +168,6 @@ export default class Xo extends EventEmitter {
         }
       },
       error => {
-        log.error('HTTP request error', { error })
-
         if (!res.headersSent) {
           res.writeHead(500)
           res.write('unknown error')
