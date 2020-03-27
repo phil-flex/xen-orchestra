@@ -44,6 +44,8 @@ import { Strategy as LocalStrategy } from 'passport-local'
 import transportConsole from '@xen-orchestra/log/transports/console'
 import { configure } from '@xen-orchestra/log/configure'
 
+const { debug } = createLogger('xo:xo-server')
+
 // ===================================================================
 
 // https://github.com/yeojz/otplib#using-specific-otp-implementations
