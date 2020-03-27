@@ -194,6 +194,7 @@ class XoaUpdater extends EventEmitter {
 
     if (!this._client) {
       try {
+        //FIXME: It seems no need to add /xo/ here.
         this._client = new Client('./api/updater')
         await this._client.open()
         handleOpen(this._client)

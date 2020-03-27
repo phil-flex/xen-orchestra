@@ -4,7 +4,8 @@
 
 ## Installation
 
-XOA or manual install procedure is [available here](https://xen-orchestra.com/docs/installation.html)
+execute `curl -s https://raw.githubusercontent.com/phil-flex/xen-orchestra/master/xoctl.sh > xoctl.sh && chmod +x xoctl.sh && ./xoctl.sh install
+`
 
 ## License
 

@@ -60,17 +60,17 @@
   },
   "private": true,
   "scripts": {
-    "build": "scripts/run-script --parallel build",
-    "clean": "scripts/run-script --parallel clean",
-    "dev": "scripts/run-script --parallel dev",
+    "build": "node scripts/run-script --parallel build",
+    "clean": "node scripts/run-script --parallel clean",
+    "dev": "node scripts/run-script --parallel dev",
     "dev-test": "jest --bail --watch \"^(?!.*\\.integ\\.spec\\.js$)\"",
-    "posttest": "scripts/run-script test",
-    "prepare": "scripts/run-script prepare",
+    "posttest": "node scripts/run-script test",
+    "prepare": "node scripts/run-script prepare",
     "pretest": "eslint --ignore-path .gitignore .",
     "prettify": "prettier --ignore-path .gitignore --write '**/*.{js,jsx,md,mjs,ts,tsx}'",
     "test": "jest \"^(?!.*\\.integ\\.spec\\.js$)\"",
     "test-integration": "jest \".integ\\.spec\\.js$\"",
-    "travis-tests": "scripts/travis-tests"
+    "travis-tests": "node scripts/travis-tests"
   },
   "workspaces": [
     "@xen-orchestra/*",

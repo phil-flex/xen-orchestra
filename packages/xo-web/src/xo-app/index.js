@@ -123,36 +123,36 @@ export default class XoApp extends Component {
   }
   getChildContext = () => ({ shortcuts: shortcutManager })
 
-  displayOpenSourceDisclaimer() {
-    const previousDisclaimer = cookies.get('previousDisclaimer')
-    const now = Math.floor(Date.now() / 1e3)
-    const oneWeekAgo = now - 7 * 24 * 3600
-    if (!previousDisclaimer || previousDisclaimer < oneWeekAgo) {
-      alert(
-        _('disclaimerTitle'),
-        <div>
-          <p>{_('disclaimerText1')}</p>
-          <p>
-            {_('disclaimerText2')}{' '}
-            <a href='https://xen-orchestra.com/#!/xoa?pk_campaign=xoa_source_upgrade&pk_kwd=ossmodal'>
-              XOA (turnkey appliance)
-            </a>
-          </p>
-          <p>{_('disclaimerText3')}</p>
-        </div>
-      )
-      cookies.set('previousDisclaimer', now)
-    }
-  }
+  // displayOpenSourceDisclaimer() {
+  //   const previousDisclaimer = cookies.get('previousDisclaimer')
+  //   const now = Math.floor(Date.now() / 1e3)
+  //   const oneWeekAgo = now - 7 * 24 * 3600
+  //   if (!previousDisclaimer || previousDisclaimer < oneWeekAgo) {
+  //     alert(
+  //       _('disclaimerTitle'),
+  //       <div>
+  //         <p>{_('disclaimerText1')}</p>
+  //         <p>
+  //           {_('disclaimerText2')}{' '}
+  //           <a href='https://xen-orchestra.com/#!/xoa?pk_campaign=xoa_source_upgrade&pk_kwd=ossmodal'>
+  //             XOA (turnkey appliance)
+  //           </a>
+  //         </p>
+  //         <p>{_('disclaimerText3')}</p>
+  //       </div>
+  //     )
+  //     cookies.set('previousDisclaimer', now)
+  //   }
+  // }
 
   dismissSourceBanner = () => this.setState({ dismissedSourceBanner: true })
 
   componentDidMount() {
     this.refs.bodyWrapper.style.minHeight =
       this.refs.menu.getWrappedInstance().height + 'px'
-    if (+process.env.XOA_PLAN === 5) {
-      this.displayOpenSourceDisclaimer()
-    }
+    //if (+process.env.XOA_PLAN === 5) {
+    //  this.displayOpenSourceDisclaimer()
+    //}
   }
 
   _shortcutsHandler = (command, event) => {

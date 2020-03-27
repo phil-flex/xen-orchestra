@@ -18,6 +18,14 @@ import mixins from './xo-mixins'
 import Connection from './connection'
 import { generateToken, noop } from './utils'
 
+import createLogger from 'debug'
+
+const debug = createLogger('xo:xo')
+
+const warn = (...args) => {
+  console.warn('[Warn]', ...args)
+}
+
 // ===================================================================
 
 const log = createLogger('xo:xo')
@@ -126,17 +134,25 @@ export default class Xo extends EventEmitter {
 
   // -----------------------------------------------------------------
 
-  _handleHttpRequest(req, res, next) {
+  _handleHttpRequest(req, res, next) { //NOTE: /xo/api/ may goes here.
     const { url } = req
 
     const { _httpRequestWatchers: watchers } = this
-    const watcher = watchers[url]
+    //HACK: url in watches does not have /xo/ so remove it
+    //const watchUrl = url.replace('/xo','')
+    //const watchUrl = url //fix the url from generateToken
+    //const watcher = watchers[watchUrl]
+    //const watcher = watchers[url]
+    const watcher = watchers[encodeURI(url)];
+
+    debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
+
     if (!watcher) {
       next()
       return
     }
     if (!watcher.persistent) {
-      delete watchers[url]
+      delete watchers[encodeURI(url)]
     }
 
     const { fn, data } = watcher
@@ -170,8 +186,9 @@ export default class Xo extends EventEmitter {
     do {
       url = `/api/${await generateToken()}${suffix}`
     } while (url in watchers)
-
-    watchers[url] = {
+        //debug('generateToken url: %s', url)
+    //HACK: Either here add '/xo' or search with removal of /xo in url, I think the key should be token only in future and it should not be url depends
+    watchers[encodeURI(`/xo${url}`)] = {
       data,
       fn,
     }
@@ -184,12 +201,12 @@ export default class Xo extends EventEmitter {
     { data = undefined, persistent = true } = {}
   ) {
     const { _httpRequestWatchers: watchers } = this
-
+    //debug('registerHttpRequestHandler url: %s', url)
     if (url in watchers) {
       throw new Error(`a handler is already registered for ${url}`)
     }
 
-    watchers[url] = {
+    watchers[`/xo${url}`] = {
       data,
       fn,
       persistent,
