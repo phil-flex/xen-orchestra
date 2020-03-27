@@ -594,7 +594,7 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      //log.info(`- WebSocket connection (${remoteAddress})`)
+      log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
@@ -669,7 +669,7 @@ const setUpConsoleProxy = (webServer, xo) => {
         //debug(Object.getOwnPropertyNames(req.headers))
         //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
         //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
+        debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
 
         const data = {
           timestamp: Date.now(),
