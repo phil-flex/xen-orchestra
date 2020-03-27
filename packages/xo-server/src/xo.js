@@ -18,8 +18,6 @@ import mixins from './xo-mixins'
 import Connection from './connection'
 import { generateToken, noop } from './utils'
 
-const debug = createLogger('xo:xo')
-
 const warn = (...args) => {
   console.warn('[Warn]', ...args)
 }
@@ -140,8 +138,6 @@ export default class Xo extends EventEmitter {
     //const watcher = watchers[url]
     const watcher = watchers[encodeURI(url)];
 
-    debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
-
     if (!watcher) {
       next()
       return
@@ -179,7 +175,6 @@ export default class Xo extends EventEmitter {
     do {
       url = `/api/${await generateToken()}${suffix}`
     } while (url in watchers)
-        //debug('generateToken url: %s', url)
     //HACK: Either here add '/xo' or search with removal of /xo in url, I think the key should be token only in future and it should not be url depends
     watchers[encodeURI(`/xo${url}`)] = {
       data,
