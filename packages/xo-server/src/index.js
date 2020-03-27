@@ -181,7 +181,6 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect('/xo/')
   })
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   express.get('/xo/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
       return res.redirect('/xo/signin')
@@ -236,11 +235,10 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect(303, req.flash('return-url')[0] || '/xo/')
   }
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/xo\/callback)?(:?\?.*)?$/
+  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   const UNCHECKED_URL_RE = /favicon|fontawesome|images|styles|\.(?:css|jpg|png)$/
   express.use(async (req, res, next) => {
     const { url } = req
-    //debug('url: %s', url)
     if (UNCHECKED_URL_RE.test(url)) {
       return next()
     }
@@ -597,7 +595,7 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      //log.info(`- WebSocket connection (${remoteAddress})`)
+      log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
@@ -665,6 +663,7 @@ const setUpConsoleProxy = (webServer, xo) => {
         }
 
         //const { remoteAddress } = socket
+        log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
         //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
         const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
         //debug(Object.getOwnPropertyNames(req.headers))
