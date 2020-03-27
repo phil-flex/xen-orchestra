@@ -1,5 +1,17 @@
 import JsonRpcWebSocketClient, { OPEN, CLOSED } from 'jsonrpc-websocket-client'
 import { BaseError } from 'make-error'
+import createLogger from 'debug'
+
+// ===================================================================
+
+const debug = createLogger('xo:main')
+
+const warn = (...args) => {
+  console.warn('[Warn]', ...args)
+}
+
+// ===================================================================
+
 
 // ===================================================================
 
@@ -14,6 +26,9 @@ export class XoError extends BaseError {}
 export default class Xo extends JsonRpcWebSocketClient {
   constructor(opts) {
     const url = opts != null ? opts.url : '.'
+    //console.log("JsonRpcWebSocketClient");
+	//console.log("super(url?'':/api/)")
+    //console.log(url);
     super(`${url === '/' ? '' : url}/api/`)
 
     this._credentials = opts != null ? opts.credentials : null
@@ -34,6 +49,7 @@ export default class Xo extends JsonRpcWebSocketClient {
   }
 
   call(method, args, i) {
+    //debug('xo-lib.call: %s, %s', method, args)
     if (method.startsWith('session.')) {
       return Promise.reject(
         new XoError('session.*() methods are disabled from this interface')
