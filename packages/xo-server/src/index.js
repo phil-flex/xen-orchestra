@@ -235,7 +235,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect(303, req.flash('return-url')[0] || '/xo/')
   }
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
+  //NOTE: Duplicated -->const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/xo\/callback)?(:?\?.*)?$/
   const UNCHECKED_URL_RE = /favicon|fontawesome|images|styles|\.(?:css|jpg|png)$/
   express.use(async (req, res, next) => {
     const { url } = req
