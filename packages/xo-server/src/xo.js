@@ -18,8 +18,6 @@ import mixins from './xo-mixins'
 import Connection from './connection'
 import { generateToken, noop } from './utils'
 
-import createLogger from 'debug'
-
 const debug = createLogger('xo:xo')
 
 const warn = (...args) => {
