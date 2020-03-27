@@ -48,7 +48,7 @@ import transportConsole from '@xen-orchestra/log/transports/console'
 import { configure } from '@xen-orchestra/log/configure'
 import { generateToken } from './utils'
 
-const { debug } = createLogger('xo:xo-server')
+//const { debug } = createLogger('xo:xo-server')
 
 // ===================================================================
 
