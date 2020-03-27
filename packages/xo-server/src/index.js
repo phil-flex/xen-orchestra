@@ -181,6 +181,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect('/xo/')
   })
 
+  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   express.get('/xo/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
       return res.redirect('/xo/signin')
@@ -239,6 +240,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
   const UNCHECKED_URL_RE = /favicon|fontawesome|images|styles|\.(?:css|jpg|png)$/
   express.use(async (req, res, next) => {
     const { url } = req
+    //debug('url: %s', url)
     if (UNCHECKED_URL_RE.test(url)) {
       return next()
     }
