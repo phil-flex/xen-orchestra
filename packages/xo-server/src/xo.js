@@ -18,7 +18,9 @@ import mixins from './xo-mixins'
 import Connection from './connection'
 import { generateToken, noop } from './utils'
 
-//const debug = createLogger('xo:xo')
+import createLogger from 'debug'
+
+const debug = createLogger('xo:xo')
 
 const warn = (...args) => {
   console.warn('[Warn]', ...args)
@@ -26,7 +28,7 @@ const warn = (...args) => {
 
 // ===================================================================
 
-//const log = createLogger('xo:xo')
+const log = createLogger('xo:xo')
 
 @mixin(mapToArray(mixins))
 export default class Xo extends EventEmitter {
@@ -143,7 +145,7 @@ export default class Xo extends EventEmitter {
     //const watcher = watchers[url]
     const watcher = watchers[encodeURI(url)];
 
-    //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
+    debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
 
     if (!watcher) {
       next()
@@ -169,7 +171,7 @@ export default class Xo extends EventEmitter {
         }
       },
       error => {
-//        log.error('HTTP request error', { error })
+        log.error('HTTP request error', { error })
 
         if (!res.headersSent) {
           res.writeHead(500)

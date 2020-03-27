@@ -600,7 +600,7 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      log.info(`- WebSocket connection (${remoteAddress})`)
+      //log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
@@ -668,8 +668,13 @@ const setUpConsoleProxy = (webServer, xo) => {
           throw invalidCredentials()
         }
 
-        const { remoteAddress } = socket
-        log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
+        //const { remoteAddress } = socket
+        //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
+        const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
+        //debug(Object.getOwnPropertyNames(req.headers))
+        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
+        //debug(Object.getOwnPropertyNames(req.headers))
+        debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
         //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
         //const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
         //debug(Object.getOwnPropertyNames(req.headers))
