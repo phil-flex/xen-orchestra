@@ -7,7 +7,7 @@ SCRIPT_VERSION="v0.3.2-alpha"
 
 # NodeJS Version
 #NODE_VERSION="lts" #Don't works anymore
-NODE_VERSION="8.17.0"
+NODE_VERSION="12.16.1"
 
 # Set script to exit if any subcommand returns non 0 (fails).
 set -e
