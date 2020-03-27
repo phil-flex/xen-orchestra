@@ -54,7 +54,7 @@ maxTokenValidity = '0.5 year'
 #
 # For instance, it can be changed to `/signin/saml` if that's the provider that
 # should be used by default.
-defaultSignInPage = '/signin'
+defaultSignInPage = '/xo/signin'
 
 [backup]
 # Delay for which backups listing on a remote is cached
@@ -102,7 +102,7 @@ honorCipherOrder = true
 secureOptions = 117440512
 
 [http.mounts]
-'/' = '../xo-web/dist'
+'/xo/' = '../xo-web/dist'
 
 [remoteOptions]
 mountsDir = '/run/xo-server/mounts'
