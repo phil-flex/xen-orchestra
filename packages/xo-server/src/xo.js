@@ -152,7 +152,9 @@ export default class Xo extends EventEmitter {
     }).then(
       result => {
         if (result != null) {
-          if (typeof result.pipe === 'function') {
+          if (typeof result === 'string' || Buffer.isBuffer(result)) {
+            res.end(result)
+          } else if (typeof result.pipe === 'function') {
             result.pipe(res)
           } else {
             res.end(JSON.stringify(result))
