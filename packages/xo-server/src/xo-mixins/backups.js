@@ -28,6 +28,7 @@ import {
 import createSizeStream from '../size-stream'
 import xapiObjectToXo from '../xapi-object-to-xo'
 import { debounceWithKey } from '../_pDebounceWithKey'
+import { decorateWith } from '../_decorateWith'
 import { lvs, pvs } from '../lvm'
 import {
   forEach,
