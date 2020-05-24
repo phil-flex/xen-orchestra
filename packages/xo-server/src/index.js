@@ -183,7 +183,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     res.redirect('/xo/')
   })
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
+  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/xo\/callback)?(:?\?.*)?$/
   express.get('/xo/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
       return res.redirect('/xo/signin')
