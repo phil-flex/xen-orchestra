@@ -18,7 +18,7 @@ import mixins from './xo-mixins'
 import Connection from './connection'
 import { generateToken, noop } from './utils'
 
-const debug = createLogger('xo:xo')
+//const debug = createLogger('xo:xo')
 
 const warn = (...args) => {
   console.warn('[Warn]', ...args)
@@ -143,7 +143,7 @@ export default class Xo extends EventEmitter {
     //const watcher = watchers[url]
     const watcher = watchers[encodeURI(url)];
 
-    debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
+    //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
 
     if (!watcher) {
       next()
