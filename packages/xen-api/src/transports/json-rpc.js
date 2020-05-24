@@ -16,7 +16,7 @@ export default ({ secureOptions, url }) => {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        path: '/jsonrpc',
+        path: '/xo/jsonrpc',
       })
       .readAll('utf8')
       .then(

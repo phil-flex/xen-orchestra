@@ -79,7 +79,7 @@ export default ({ secureOptions, url: { hostname, port, protocol } }) => {
   const client = (secure ? createSecureClient : createClient)({
     ...(secure ? secureOptions : undefined),
     host: hostname,
-    path: '/json',
+    path: '/xo/json',
     port,
   })
   const call = promisify(client.methodCall, client)
