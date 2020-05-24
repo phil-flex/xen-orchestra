@@ -16,7 +16,7 @@ render(
       routes={{
         ...XoApp.route,
         component: XoApp,
-        path: '/xo/',
+        path: '/',
       }}
     />
   </Provider>,
