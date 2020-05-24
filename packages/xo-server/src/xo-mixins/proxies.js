@@ -348,7 +348,7 @@ export default class Proxy {
       },
       hostname: ipAddress,
       method: 'POST',
-      pathname: '/api/v1',
+      pathname: '/xo/api/v1',
       protocol: 'https:',
       rejectUnauthorized: false,
       timeout: parseDuration(this._xoProxyConf.callTimeout),
