@@ -16,7 +16,7 @@ export default ({ secureOptions, url }) => {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        path: '/xo/jsonrpc',
+        path: '/jsonrpc', //it is for visiting xenserver
       })
       .readAll('utf8')
       .then(
