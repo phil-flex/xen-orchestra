@@ -65,7 +65,7 @@ configure([
   },
 ])
 
-const log = createLogger('xo:main')
+//const log = createLogger('xo:main')
 
 // ===================================================================
 
