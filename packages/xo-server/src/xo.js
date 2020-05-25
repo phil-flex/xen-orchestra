@@ -173,8 +173,9 @@ export default class Xo extends EventEmitter {
 
         if (!res.headersSent) {
           res.writeHead(500)
+          res.write('unknown error')
         }
-        res.end('unknown error')
+        res.end()
       }
     )
   }
