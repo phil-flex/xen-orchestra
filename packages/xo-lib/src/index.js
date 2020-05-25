@@ -29,6 +29,7 @@ export default class Xo extends JsonRpcWebSocketClient {
     //console.log("JsonRpcWebSocketClient");
 	//console.log("super(url?'':/api/)")
     //console.log(url);
+    //It should contains no /xo/ path
     super(`${url === '/' ? '' : url}/api/`)
 
     this._credentials = opts != null ? opts.credentials : null
