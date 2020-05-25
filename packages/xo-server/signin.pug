@@ -15,7 +15,7 @@ html
       if error
         p.text-danger #{error}
       if otp
-        form(action = 'xo/signin-otp' method = 'post')
+        form(action = 'signin-otp' method = 'post')
           fieldset
             .input-group.mb-1
               span.input-group-addon
@@ -35,8 +35,8 @@ html
       else
         div.mb-2
         each label, id in strategies
-          div: a(href = 'xo/signin/' + id).btn.btn-block.btn-primary.mb-1 Sign in with #{label}
-        form(action = 'xo/signin/local' method = 'post')
+          div: a(href = 'signin/' + id).btn.btn-block.btn-primary.mb-1 Sign in with #{label}
+        form(action = 'signin/local' method = 'post')
           fieldset
             .input-group.mb-1
               span.input-group-addon
