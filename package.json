@@ -32,7 +32,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged && scripts/lint-staged"
+      "pre-commit": "lint-staged && node scripts/lint-staged"
     }
   },
   "jest": {
