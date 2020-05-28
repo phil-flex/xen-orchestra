@@ -248,6 +248,8 @@ class SortedTable extends Component {
   static propTypes = {
     defaultColumn: PropTypes.number,
     defaultFilter: PropTypes.string,
+    // To not duplicate filter on the home page.
+    displayFilter: PropTypes.bool,
     collection: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
       .isRequired,
     columns: PropTypes.arrayOf(
@@ -312,6 +314,7 @@ class SortedTable extends Component {
   }
 
   static defaultProps = {
+    displayFilter: true,
     itemsPerPage: 10,
   }
 
@@ -813,6 +816,7 @@ class SortedTable extends Component {
     const { props, state } = this
     const {
       actions,
+      displayFilter,
       filterContainer,
       individualActions,
       itemsPerPage,
@@ -845,7 +849,7 @@ class SortedTable extends Component {
       />
     )
 
-    const filterInstance = (
+    const filterInstance = displayFilter && (
       <TableFilter
         filters={props.filters}
         onChange={this._setFilter}
@@ -986,13 +990,14 @@ class SortedTable extends Component {
                 ))}
             </Col>
             <Col mediumSize={4}>
-              {filterContainer ? (
-                <Portal container={() => filterContainer()}>
-                  {filterInstance}
-                </Portal>
-              ) : (
-                filterInstance
-              )}
+              {displayFilter &&
+                (filterContainer ? (
+                  <Portal container={() => filterContainer()}>
+                    {filterInstance}
+                  </Portal>
+                ) : (
+                  filterInstance
+                ))}
             </Col>
           </SingleLineRow>
         </Container>
