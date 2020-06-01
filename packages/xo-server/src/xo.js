@@ -138,7 +138,7 @@ export default class Xo extends EventEmitter {
     //const watcher = watchers[url]
     const watcher = watchers[encodeURI(url)];
 
-    debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
+    //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
 
     if (!watcher) {
       next()
