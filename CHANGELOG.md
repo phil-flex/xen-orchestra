@@ -1,6 +1,8 @@
 # ChangeLog
 
-## **next**
+## **5.47.1** (2020-06-02)
+
+![Channel: latest](https://badgen.net/badge/channel/latest/yellow)
 
 ### Enhancements
 
