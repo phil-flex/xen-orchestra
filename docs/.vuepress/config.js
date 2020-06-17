@@ -81,6 +81,8 @@ module.exports = {
         children: [
           ['/xoa', 'XOA Support'],
           ['/purchase', 'Purchase XOA'],
+          ['/license_management', 'License Management'],
+          ['/reseller', 'Partner Program'],
           ['/community', 'Community Support'],
         ],
       },

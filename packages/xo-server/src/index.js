@@ -20,6 +20,7 @@ import WebSocket from 'ws'
 import xdg from 'xdg-basedir'
 import { forOwn, map, merge, once } from 'lodash'
 import { genSelfSignedCert } from '@xen-orchestra/self-signed'
+import { parseDuration } from '@vates/parse-duration'
 import { URL } from 'url'
 
 import { compile as compilePug } from 'pug'
@@ -33,7 +34,6 @@ import { invalidCredentials } from 'xo-common/api-errors'
 import { ensureDir, outputFile, readdir, readFile } from 'fs-extra'
 
 import ensureArray from './_ensureArray'
-import parseDuration from './_parseDuration'
 import Xo from './xo'
 
 import bodyParser from 'body-parser'
@@ -167,7 +167,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
   const signInPage = compilePug(
     await readFile(joinPath(__dirname, '..', 'signin.pug'))
   )
-  express.get('/xo/signin', (req, res, next) => {
+  express.get('/signin', (req, res, next) => {
     res.send(
       signInPage({
         error: req.flash('error')[0],
@@ -176,15 +176,14 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     )
   })
 
-  express.get('/xo/signout', (req, res) => {
+  express.get('/signout', (req, res) => {
     res.clearCookie('token')
-    res.redirect('/xo/')
+    res.redirect('/')
   })
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
-  express.get('/xo/signin-otp', (req, res, next) => {
+  express.get('/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
-      return res.redirect('/xo/signin')
+      return res.redirect('/signin')
     }
 
     res.send(
@@ -196,18 +195,18 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
     )
   })
 
-  express.post('/xo/signin-otp', (req, res, next) => {
+  express.post('/signin-otp', (req, res, next) => {
     const { user } = req.session
 
     if (user === undefined) {
-      return res.redirect(303, '/xo/signin')
+      return res.redirect(303, '/signin')
     }
 
     if (authenticator.check(req.body.otp, user.preferences.otp)) {
       setToken(req, res, next)
     } else {
       req.flash('error', 'Invalid code')
-      res.redirect(303, '/xo/signin-otp')
+      res.redirect(303, '/signin-otp')
     }
   })
 
@@ -233,13 +232,14 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
 
     delete req.session.isPersistent
     delete req.session.user
-    res.redirect(303, req.flash('return-url')[0] || '/xo/')
+    res.redirect(303, req.flash('return-url')[0] || '/')
   }
 
+  const SIGNIN_STRATEGY_RE = /^\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   const UNCHECKED_URL_RE = /favicon|fontawesome|images|styles|\.(?:css|jpg|png)$/
   express.use(async (req, res, next) => {
     const { url } = req
-    //debug('url: %s', url)
+
     if (UNCHECKED_URL_RE.test(url)) {
       return next()
     }
@@ -253,7 +253,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
 
         if (!user) {
           req.flash('error', info ? info.message : 'Invalid credentials')
-          return res.redirect(303, '/xo/signin')
+          return res.redirect(303, '/signin')
         }
 
         req.session.user = { id: user.id, preferences: user.preferences }
@@ -261,7 +261,7 @@ async function setUpPassport(express, xo, { authentication: authCfg }) {
           matches[1] === 'local' && req.body['remember-me'] === 'on'
 
         if (user.preferences?.otp !== undefined) {
-          return res.redirect(303, '/xo/signin-otp')
+          return res.redirect(303, '/signin-otp')
         }
 
         setToken(req, res, next)
@@ -595,7 +595,7 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      //log.info(`- WebSocket connection (${remoteAddress})`)
+      log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
@@ -625,7 +625,7 @@ const setUpApi = (webServer, xo, config) => {
     })
   }
   webServer.on('upgrade', (req, socket, head) => {
-    if (req.url.substr(req.url.length - 5) === '/api/') {
+    if (req.url === '/api/') {
       webSocketServer.handleUpgrade(req, socket, head, ws =>
         onConnection(ws, req)
       )
@@ -635,7 +635,7 @@ const setUpApi = (webServer, xo, config) => {
 
 // ===================================================================
 
-const CONSOLE_PROXY_PATH_RE = /^\/xo\/api\/consoles\/(.*)$/
+const CONSOLE_PROXY_PATH_RE = /^\/api\/consoles\/(.*)$/
 
 const setUpConsoleProxy = (webServer, xo) => {
   const webSocketServer = new WebSocket.Server({
@@ -662,15 +662,8 @@ const setUpConsoleProxy = (webServer, xo) => {
           throw invalidCredentials()
         }
 
-        //const { remoteAddress } = socket
-        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
-        //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
-        const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
-        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
+        const { remoteAddress } = socket
+        log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
 
         const data = {
           timestamp: Date.now(),
@@ -692,8 +685,6 @@ const setUpConsoleProxy = (webServer, xo) => {
 
         xo.emit('xo:audit', 'consoleOpened', data)
 
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
         socket.on('close', () => {
           xo.emit('xo:audit', 'consoleClosed', {
             ...data,
@@ -798,7 +789,7 @@ export default async function main(args) {
         if (req.secure) {
           return next()
         }
-        //debug('redirect secure site: %s', `https://${req.hostname}:${port}${req.originalUrl}`)
+
         res.redirect(`https://${req.hostname}:${port}${req.originalUrl}`)
       })
     }
