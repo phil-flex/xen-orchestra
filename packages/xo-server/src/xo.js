@@ -18,10 +18,9 @@ import mixins from './xo-mixins'
 import Connection from './connection'
 import { generateToken, noop } from './utils'
 
-
 // ===================================================================
 
-//const log = createLogger('xo:xo')
+const log = createLogger('xo:xo')
 
 @mixin(mapToArray(mixins))
 export default class Xo extends EventEmitter {
@@ -164,7 +163,7 @@ export default class Xo extends EventEmitter {
         }
       },
       error => {
-//        log.error('HTTP request error', { error })
+        log.error('HTTP request error', { error })
 
         if (!res.headersSent) {
           res.writeHead(500)

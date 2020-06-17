@@ -48,7 +48,6 @@ import { type Schedule } from '../scheduling'
 
 import createSizeStream from '../../size-stream'
 import { debounceWithKey, REMOVE_CACHE_ENTRY } from '../../_pDebounceWithKey'
-import { decorateWith } from '../../_decorateWith'
 import { waitAll } from '../../_waitAll'
 import {
   type DeltaVmExport,
