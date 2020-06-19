@@ -596,7 +596,7 @@ const setUpApi = (webServer, xo, config) => {
 
     // Close the XO connection with this WebSocket.
     socket.once('close', () => {
-      //log.info(`- WebSocket connection (${remoteAddress})`)
+      log.info(`- WebSocket connection (${remoteAddress})`)
 
       connection.close()
     })
