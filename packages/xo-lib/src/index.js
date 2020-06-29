@@ -3,13 +3,13 @@ import { BaseError } from 'make-error'
 import createLogger from 'debug'
 
 // ===================================================================
-
-const debug = createLogger('xo:main')
-
-const warn = (...args) => {
-  console.warn('[Warn]', ...args)
-}
-
+//
+//const debug = createLogger('xo:main')
+//
+//const warn = (...args) => {
+//  console.warn('[Warn]', ...args)
+//}
+//
 // ===================================================================
 
 
