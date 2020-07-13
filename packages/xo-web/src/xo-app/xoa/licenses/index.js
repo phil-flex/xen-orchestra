@@ -115,10 +115,6 @@ const LicenseManager = ({ item, userData }) => {
     return <ProxyLicense license={item} />
   }
 
-  if (type === 'proxy') {
-    return <ProxyLicense license={item} />
-  }
-
   console.warn('encountered unsupported license type')
   return null
 }
