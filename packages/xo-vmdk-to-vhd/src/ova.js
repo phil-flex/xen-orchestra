@@ -195,7 +195,6 @@ async function parseOVF(fileFragment, stringDeserializer) {
             compression: file && file.compression,
           }
         })
-
         // Get hardware info: CPU, RAM, disks, networks...
         const handleItem = item => {
           const handler = RESOURCE_TYPE_TO_HANDLER[item.ResourceType]

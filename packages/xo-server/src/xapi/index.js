@@ -1455,7 +1455,6 @@ export default class Xapi extends XapiBase {
           stream.resume()
           return
         }
-
         const table = tables[entry.name]
         const vhdStream = await vmdkToVhd(
           stream,
