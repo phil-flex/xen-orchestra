@@ -31,3 +31,5 @@ pnpm-debug.log.*
 yarn-error.log
 yarn-error.log.*
 .env
+/@xen-orchestra/async-map/*.bak
+*.bak

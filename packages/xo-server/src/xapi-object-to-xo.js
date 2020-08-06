@@ -23,10 +23,15 @@ const ALLOCATION_BY_TYPE = {
   ext: 'thin',
   file: 'thin',
   hba: 'thick',
+  iscsi: 'thick',
   lvhd: 'thick',
   lvhdofcoe: 'thick',
   lvhdohba: 'thick',
   lvhdoiscsi: 'thick',
+  lvm: 'thick',
+  lvmofcoe: 'thick',
+  lvmohba: 'thick',
+  lvmoiscsi: 'thick',
   nfs: 'thin',
   ocfs: 'thick',
   ocfsohba: 'thick',
@@ -35,6 +40,7 @@ const ALLOCATION_BY_TYPE = {
   rawiscsi: 'thick',
   shm: 'thin',
   smb: 'thin',
+  udev: 'thick',
   xosan: 'thin',
   zfs: 'thin',
 }
@@ -644,8 +650,10 @@ const TRANSFORMS = {
       allowedIpv6Addresses: obj.ipv6_allowed,
       attached: Boolean(obj.currently_attached),
       device: obj.device, // TODO: should it be cast to a number?
+      lockingMode: obj.locking_mode,
       MAC: obj.MAC,
       MTU: +obj.MTU,
+      other_config: obj.other_config,
 
       // in kB/s
       rateLimit: (() => {
