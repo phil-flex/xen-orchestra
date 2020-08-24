@@ -179,7 +179,7 @@ export default class Xo extends EventEmitter {
     let url
 
     do {
-      url = `/api/${await generateToken()}${suffix}`
+      url = `/xo/api/${await generateToken()}${suffix}`
     } while (url in watchers)
         //debug('generateToken url: %s', url)
     //HACK: Either here add '/xo' or search with removal of /xo in url, I think the key should be token only in future and it should not be url depends
