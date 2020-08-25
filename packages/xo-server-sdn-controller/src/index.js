@@ -484,33 +484,6 @@ class SDNController extends EventEmitter {
 
     // -------------------------------------------------------------------------
 
-    // ---------------- OpenFlow rules method ----------------------------------
-
-    const addRule = params => this._addRule(params)
-    addRule.description = 'Add an ACL rule to a VIF'
-    addRule.params = {
-      allow: { type: 'boolean' },
-      direction: { type: 'string' },
-      ipRange: { type: 'string', optional: true },
-      port: { type: 'integer', optional: true },
-      protocol: { type: 'string', optional: true },
-      vifId: { type: 'string' },
-    }
-    addRule.permission = 'admin'
-
-    const deleteRule = params => this._deleteRule(params)
-    deleteRule.description = 'Delete an ACL rule from a VIF'
-    deleteRule.params = {
-      direction: { type: 'string' },
-      ipRange: { type: 'string', optional: true },
-      port: { type: 'integer', optional: true },
-      protocol: { type: 'string', optional: true },
-      vifId: { type: 'string' },
-    }
-    deleteRule.permission = 'admin'
-
-    // -------------------------------------------------------------------------
-
     this._unsetApiMethods = this._xo.addApiMethods({
       sdnController: {
         createPrivateNetwork,
