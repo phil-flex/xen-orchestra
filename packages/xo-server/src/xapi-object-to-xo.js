@@ -600,6 +600,7 @@ const TRANSFORMS = {
     const vdi = {
       type: 'VDI',
 
+      missing: obj.missing,
       name_description: obj.name_description,
       name_label: obj.name_label,
       parent: obj.sm_config['vhd-parent'],
@@ -657,7 +658,7 @@ const TRANSFORMS = {
       other_config: obj.other_config,
 
       // See: https://xapi-project.github.io/xen-api/networking.html
-      txChecksumming: txChecksumming === 'true' || txChecksumming === 'on',
+      txChecksumming: !(txChecksumming === 'false' || txChecksumming === 'off'),
 
       // in kB/s
       rateLimit: (() => {
