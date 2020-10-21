@@ -132,19 +132,19 @@ export default class XoApp extends Component {
     const now = Math.floor(Date.now() / 1e3)
     const oneWeekAgo = now - 7 * 24 * 3600
     if (!previousDisclaimer || previousDisclaimer < oneWeekAgo) {
-      alert(
-        _('disclaimerTitle'),
-        <div>
-          <p>{_('disclaimerText1')}</p>
-          <p>
-            {_('disclaimerText2')}{' '}
-            <a href='https://xen-orchestra.com/#!/xoa?pk_campaign=xoa_source_upgrade&pk_kwd=ossmodal'>
-              XOA (turnkey appliance)
-            </a>
-          </p>
-          <p>{_('disclaimerText3')}</p>
-        </div>
-      )
+      // alert(
+      //   _('disclaimerTitle'),
+      //   <div>
+      //     <p>{_('disclaimerText1')}</p>
+      //     <p>
+      //       {_('disclaimerText2')}{' '}
+      //       <a href='https://xen-orchestra.com/#!/xoa?pk_campaign=xoa_source_upgrade&pk_kwd=ossmodal'>
+      //         XOA (turnkey appliance)
+      //       </a>
+      //     </p>
+      //     <p>{_('disclaimerText3')}</p>
+      //   </div>
+      // )
       cookies.set('previousDisclaimer', now)
     }
   }
