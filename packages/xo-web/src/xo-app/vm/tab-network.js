@@ -16,7 +16,6 @@ import Tooltip from 'tooltip'
 import { confirm, form } from 'modal'
 import { Container, Row, Col } from 'grid'
 import { error } from 'notification'
-import { get } from '@xen-orchestra/defined'
 import { injectIntl } from 'react-intl'
 import { isIp, isIpV4 } from 'ip-utils'
 import { Number, Text, XoSelect } from 'editable'
@@ -29,7 +28,7 @@ import {
   resolveResourceSet,
 } from 'utils'
 import {
-  SelectNetwork,
+  SelectNetwork as SelectAnyNetwork,
   SelectIp,
   SelectResourceSetIp,
   SelectResourceSetsNetwork,
@@ -293,7 +292,7 @@ class VifStatus extends BaseComponent {
 
     if (lockingMode === 'disabled') {
       return (
-        <Tooltip content={_('vifDisabledNetwork')}>
+        <Tooltip content={_('vifLockingModeDisabled')}>
           <Icon icon='vif-disable' />
         </Tooltip>
       )
@@ -301,7 +300,7 @@ class VifStatus extends BaseComponent {
 
     if (lockingMode === 'unlocked') {
       return (
-        <Tooltip content={_('vifUnLockedNetwork')}>
+        <Tooltip content={_('vifLockingModeUnlocked')}>
           <Icon icon='unlock' />
         </Tooltip>
       )
@@ -309,7 +308,7 @@ class VifStatus extends BaseComponent {
 
     if (lockingMode === 'locked') {
       return (
-        <Tooltip content={_('vifLockedNetwork')}>
+        <Tooltip content={_('vifLockingModeLocked')}>
           <Icon icon='lock' />
         </Tooltip>
       )
@@ -325,7 +324,7 @@ class VifStatus extends BaseComponent {
     }
     if (network.defaultIsLocked) {
       return (
-        <Tooltip content={_('vifLockedNetwork')}>
+        <Tooltip content={_('networkDefaultLockingModeDisabled')}>
           <StackedIcons
             icons={[
               { icon: 'vif-disable', size: 1 },
@@ -336,7 +335,7 @@ class VifStatus extends BaseComponent {
       )
     }
     return (
-      <Tooltip content={_('vifUnLockedNetwork')}>
+      <Tooltip content={_('networkDefaultLockingModeUnlocked')}>
         <StackedIcons
           icons={[
             { icon: 'unlock', size: 1 },
@@ -552,9 +551,8 @@ class NewAclRuleForm extends BaseComponent {
   }
 }
 
-@addSubscriptions({
-  plugins: subscribePlugins,
-})
+@connectStore({ isAdmin })
+@addSubscriptions(({ isAdmin }) => isAdmin && { plugins: subscribePlugins })
 class AclRuleRow extends Component {
   render() {
     const { rule, vif, plugins } = this.props
@@ -589,9 +587,8 @@ class AclRuleRow extends Component {
   }
 }
 
-@addSubscriptions({
-  plugins: subscribePlugins,
-})
+@connectStore({ isAdmin })
+@addSubscriptions(({ isAdmin }) => isAdmin && { plugins: subscribePlugins })
 class AclRulesRows extends BaseComponent {
   _newAclRule(vif) {
     return confirm({
@@ -871,13 +868,15 @@ class NewVif extends BaseComponent {
     const { mac, network } = this.state
     const resourceSet = this._getResolvedResourceSet()
 
-    const Select_ =
-      isAdmin || resourceSet == null ? SelectNetwork : SelectResourceSetsNetwork
+    const SelectNetwork =
+      isAdmin || resourceSet == null
+        ? SelectAnyNetwork
+        : SelectResourceSetsNetwork
 
     return (
       <form id='newVifForm'>
         <div className='form-group'>
-          <Select_
+          <SelectNetwork
             onChange={this._selectNetwork}
             predicate={this._getNetworkPredicate()}
             required

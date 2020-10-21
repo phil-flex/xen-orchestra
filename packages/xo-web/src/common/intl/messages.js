@@ -83,8 +83,6 @@ const messages = {
   advancedSettings: 'Advanced settings',
   txChecksumming: 'TX checksumming',
   unknownSize: 'Unknown size',
-  remotesNames: 'Remotes names',
-  srsNames: 'SRs names',
 
   // ----- Modals -----
   alertOk: 'OK',
@@ -884,6 +882,7 @@ const messages = {
   hostStatus: 'Status',
   hostBuildNumber: 'Build number',
   hostIscsiIqn: 'iSCSI IQN',
+  hostIommuTooltip: 'PCI passthrough capable',
   hostNoIscsiSr: 'Not connected to an iSCSI SR',
   hostMultipathingSrs: 'Click to see concerned SRs',
   hostMultipathingPaths:
@@ -908,6 +907,7 @@ const messages = {
   hostLicenseSocket: 'Socket',
   hostLicenseExpiry: 'Expiry',
   hostRemoteSyslog: 'Remote syslog',
+  hostIommu: 'IOMMU',
   supplementalPacks: 'Installed supplemental packs',
   supplementalPackNew: 'Install new supplemental pack',
   supplementalPackPoolNew: 'Install supplemental pack on every host',
@@ -1548,6 +1548,7 @@ const messages = {
   destroyTask: 'Destroy',
   cancelTasks: 'Cancel selected tasks',
   destroyTasks: 'Destroy selected tasks',
+  objects: 'Objects',
   pool: 'Pool',
   task: 'Task',
   progress: 'Progress',
@@ -1630,6 +1631,8 @@ const messages = {
     'delete {nMetadataBackups} metadata backup{nMetadataBackups, plural, one {} other {s}}',
   remoteNotCompatibleWithSelectedProxy:
     "The backup will not be run on this remote because it's not compatible with the selected proxy",
+  remoteLoadBackupsFailure: 'Loading backups failed',
+  remoteLoadBackupsFailureMessage: 'Failed to load backups from {name}.',
 
   // ----- Restore files view -----
   listRemoteBackups: 'List remote backups',
@@ -2103,6 +2106,7 @@ const messages = {
   backupForceRestartFailedVms: "Force restart failed VMs' backup",
   clickForMoreInformation: 'Click for more information',
   goToThisJob: 'Click to go to this job',
+  goToCorrespondingLogs: 'Click to see corresponding logs',
 
   // ----- IPs ------
   ipPoolName: 'Name',
@@ -2415,6 +2419,7 @@ const messages = {
   redeployProxyWarning: 'This action will destroy the old proxy VM',
   noProxiesAvailable: 'No proxies available',
   checkProxyHealth: 'Test your proxy',
+  updateProxyApplianceSettings: 'Update appliance settings',
   proxyTestSuccess: 'Test passed for {name}',
   proxyTestSuccessMessage: 'The proxy appears to work correctly',
   proxyTestFailed: 'Test failed for {name}',
@@ -2428,6 +2433,8 @@ const messages = {
   httpProxy: 'HTTP proxy',
   httpProxyPlaceholder: 'protocol://username:password@address:port',
   proxyUpgradesError: 'Unable to check upgrades availability',
+  proxyApplianceSettingsInfo:
+    'Leave the field empty and click on OK to remove the existing configuration',
 
   // ----- Utils -----
   secondsFormat: '{seconds, plural, one {# second} other {# seconds}}',
