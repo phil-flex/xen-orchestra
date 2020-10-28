@@ -127,24 +127,31 @@ export default class Xo extends EventEmitter {
   // -----------------------------------------------------------------
 
   _handleHttpRequest(req, res, next) { //NOTE: /xo/api/ may goes here.
+    const options = {
+      url: 'apiURL',
+      json: true,
+      gzip: true, 
+      headers: {"connection": "keep-alive", "transfer-encoding": "chunked"}
+    }
     const { url } = req
-
     const { _httpRequestWatchers: watchers } = this
     //HACK: url in watches does not have /xo/ so remove it
     //const watchUrl = url.replace('/xo','')
     //const watchUrl = url //fix the url from generateToken
     //const watcher = watchers[watchUrl]
     //const watcher = watchers[url]
-    const watcher = watchers[encodeURI(url)];
+    const fixUrl = url.replace('/xo/','/')
+    const watcher = watchers[fixUrl];
 
-    //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
+    log.debug(`_handleHttpRequest ${url}`)
 
     if (!watcher) {
       next()
       return
     }
     if (!watcher.persistent) {
-      delete watchers[encodeURI(url)]
+      log.debug(`delete watchers ${fixUrl}`)
+      delete watchers[fixUrl]
     }
 
     const { fn, data } = watcher
@@ -181,9 +188,10 @@ export default class Xo extends EventEmitter {
     do {
       url = `/api/${await generateToken()}${suffix}` //It seems can't add /xo/ here
     } while (url in watchers)
-        //debug('generateToken url: %s', url)
+    //debug('generateToken url: %s', url)
     //HACK: Either here add '/xo' or search with removal of /xo in url, I think the key should be token only in future and it should not be url depends
-    watchers[encodeURI(`/xo${url}`)] = {
+    //watchers[encodeURI(`/xo${url}`)] = {
+    watchers[url] = {
       data,
       fn,
     }
@@ -196,12 +204,11 @@ export default class Xo extends EventEmitter {
     { data = undefined, persistent = true } = {}
   ) {
     const { _httpRequestWatchers: watchers } = this
-    //debug('registerHttpRequestHandler url: %s', url)
+    log.debug('registerHttpRequestHandler url: %s', url)
     if (url in watchers) {
       throw new Error(`a handler is already registered for ${url}`)
     }
-
-    watchers[`/xo${url}`] = {
+    watchers[url] = {
       data,
       fn,
       persistent,
@@ -209,6 +216,7 @@ export default class Xo extends EventEmitter {
   }
 
   async unregisterHttpRequestHandler(url) {
+    debug('unregisterHttpRequestHandler url: %s', url)
     delete this._httpRequestWatchers[url]
   }
 
