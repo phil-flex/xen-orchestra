@@ -83,6 +83,14 @@ const messages = {
   advancedSettings: 'Advanced settings',
   txChecksumming: 'TX checksumming',
   unknownSize: 'Unknown size',
+  installedCertificates: 'Installed certificates',
+  expiry: 'Expiry',
+  fingerprint: 'Fingerprint',
+  certificate: 'Certificate (PEM)',
+  certificateChain: 'Certificate chain (PEM)',
+  privateKey: 'Private key (PKCS#8)',
+  installNewCertificate: 'Install new certificate',
+  replaceExistingCertificate: 'Replace existing certificate',
 
   // ----- Modals -----
   alertOk: 'OK',
@@ -571,6 +579,7 @@ const messages = {
     'Delete backup job{nJobs, plural, one {} other {s}}',
   confirmDeleteBackupJobsBody:
     'Are you sure you want to delete {nJobs, number} backup job{nJobs, plural, one {} other {s}}?',
+  runBackupJob: 'Run backup job once',
 
   // ------ Remote -----
   remoteName: 'Name',
@@ -908,6 +917,7 @@ const messages = {
   hostLicenseExpiry: 'Expiry',
   hostRemoteSyslog: 'Remote syslog',
   hostIommu: 'IOMMU',
+  hostNoCertificateInstalled: 'No certificates installed on this host',
   supplementalPacks: 'Installed supplemental packs',
   supplementalPackNew: 'Install new supplemental pack',
   supplementalPackPoolNew: 'Install supplemental pack on every host',
@@ -2053,6 +2063,7 @@ const messages = {
   deleteSshKey: 'Delete',
   deleteSshKeys: 'Delete selected SSH keys',
   newSshKeyModalTitle: 'New SSH key',
+  sshKeyAlreadyExists: 'SSH key already exists!',
   sshKeyErrorTitle: 'Invalid key',
   sshKeyErrorMessage: 'An SSH key requires both a title and a key.',
   title: 'Title',

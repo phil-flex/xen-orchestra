@@ -435,6 +435,7 @@ const MAP_TYPE_SELECT = {
   proxy: SelectProxy,
   remote: SelectRemote,
   resourceSetIp: SelectResourceSetIp,
+  resourceSetNetwork: SelectResourceSetsNetwork,
   resourceSetSr: SelectResourceSetsSr,
   SR: SelectSr,
   subject: SelectSubject,
