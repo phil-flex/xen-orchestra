@@ -172,7 +172,7 @@ async function setUpPassport(
   const signInPage = compilePug(
     await readFile(joinPath(__dirname, '..', 'signin.pug'))
   )
-  express.get('/xo/signin', (req, res, next) => {
+  express.get('/signin', (req, res, next) => {
     res.send(
       signInPage({
         error: req.flash('error')[0],
@@ -181,14 +181,14 @@ async function setUpPassport(
     )
   })
 
-  express.get('/xo/signout', (req, res) => {
+  express.get('/signout', (req, res) => {
     res.clearCookie('token', cookieCfg)
-    res.redirect('/xo/')
+    res.redirect('/')
   })
 
-  express.get('/xo/signin-otp', (req, res, next) => {
+  express.get('/signin-otp', (req, res, next) => {
     if (req.session.user === undefined) {
-      return res.redirect('/xo/signin')
+      return res.redirect('/signin')
     }
 
     res.send(
@@ -200,18 +200,18 @@ async function setUpPassport(
     )
   })
 
-  express.post('/xo/signin-otp', (req, res, next) => {
+  express.post('/signin-otp', (req, res, next) => {
     const { user } = req.session
 
     if (user === undefined) {
-      return res.redirect(303, '/xo/signin')
+      return res.redirect(303, '/signin')
     }
 
     if (authenticator.check(req.body.otp, user.preferences.otp)) {
       setToken(req, res, next)
     } else {
       req.flash('error', 'Invalid code')
-      res.redirect(303, '/xo/signin-otp')
+      res.redirect(303, '/signin-otp')
     }
   })
 
@@ -237,14 +237,14 @@ async function setUpPassport(
 
     delete req.session.isPersistent
     delete req.session.user
-    res.redirect(303, req.flash('return-url')[0] || '/xo/')
+    res.redirect(303, req.flash('return-url')[0] || '/')
   }
 
-  const SIGNIN_STRATEGY_RE = /^\/xo\/signin\/([^/]+)(\/xo\/callback)?(:?\?.*)?$/
+  const SIGNIN_STRATEGY_RE = /^\/signin\/([^/]+)(\/callback)?(:?\?.*)?$/
   const UNCHECKED_URL_RE = /favicon|fontawesome|images|styles|\.(?:css|jpg|png)$/
   express.use(async (req, res, next) => {
     const { url } = req
-    //debug('url: %s', url)
+
     if (UNCHECKED_URL_RE.test(url)) {
       return next()
     }
@@ -258,7 +258,7 @@ async function setUpPassport(
 
         if (!user) {
           req.flash('error', info ? info.message : 'Invalid credentials')
-          return res.redirect(303, '/xo/signin')
+          return res.redirect(303, '/signin')
         }
 
         req.session.user = { id: user.id, preferences: user.preferences }
@@ -266,7 +266,7 @@ async function setUpPassport(
           matches[1] === 'local' && req.body['remember-me'] === 'on'
 
         if (user.preferences?.otp !== undefined) {
-          return res.redirect(303, '/xo/signin-otp')
+          return res.redirect(303, '/signin-otp')
         }
 
         setToken(req, res, next)
@@ -630,7 +630,7 @@ const setUpApi = (webServer, xo, config) => {
     })
   }
   webServer.on('upgrade', (req, socket, head) => {
-    if (req.url.substr(req.url.length - 5) === '/api/') {
+    if (req.url === '/api/') {
       webSocketServer.handleUpgrade(req, socket, head, ws =>
         onConnection(ws, req)
       )
@@ -640,7 +640,7 @@ const setUpApi = (webServer, xo, config) => {
 
 // ===================================================================
 
-const CONSOLE_PROXY_PATH_RE = /^\/xo\/api\/consoles\/(.*)$/
+const CONSOLE_PROXY_PATH_RE = /^\/api\/consoles\/(.*)$/
 
 const setUpConsoleProxy = (webServer, xo) => {
   const webSocketServer = new WebSocket.Server({
@@ -667,13 +667,8 @@ const setUpConsoleProxy = (webServer, xo) => {
           throw invalidCredentials()
         }
 
-        //const { remoteAddress } = socket
-        //NOTE: If socket from reverse proxy, it is required to look up from x-real-ip or x-forwarded-for to get the real ip behind
-        const remoteAddress = req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)        //log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
+        const { remoteAddress } = socket
+        log.info(`+ Console proxy (${user.name} - ${remoteAddress})`)
 
         const data = {
           timestamp: Date.now(),
@@ -695,8 +690,6 @@ const setUpConsoleProxy = (webServer, xo) => {
 
         xo.emit('xo:audit', 'consoleOpened', data)
 
-        //debug(Object.getOwnPropertyNames(req.headers))
-        //debug(req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress)
         socket.on('close', () => {
           xo.emit('xo:audit', 'consoleClosed', {
             ...data,
@@ -801,7 +794,7 @@ export default async function main(args) {
         if (req.secure) {
           return next()
         }
-        //debug('redirect secure site: %s', `https://${req.hostname}:${port}${req.originalUrl}`)
+
         res.redirect(`https://${req.hostname}:${port}${req.originalUrl}`)
       })
     }

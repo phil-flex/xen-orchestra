@@ -18,6 +18,7 @@ import {
   SelectProxy,
   SelectRemote,
   SelectResourceSetIp,
+  SelectResourceSetsNetwork,
   SelectResourceSetsSr,
   SelectSr,
   SelectSubject,

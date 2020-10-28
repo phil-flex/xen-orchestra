@@ -126,25 +126,17 @@ export default class Xo extends EventEmitter {
 
   // -----------------------------------------------------------------
 
-  _handleHttpRequest(req, res, next) { //NOTE: /xo/api/ may goes here.
+  _handleHttpRequest(req, res, next) {
     const { url } = req
 
     const { _httpRequestWatchers: watchers } = this
-    //HACK: url in watches does not have /xo/ so remove it
-    //const watchUrl = url.replace('/xo','')
-    //const watchUrl = url //fix the url from generateToken
-    //const watcher = watchers[watchUrl]
-    //const watcher = watchers[url]
-    const watcher = watchers[encodeURI(url)];
-
-    //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
-
+    const watcher = watchers[url]
     if (!watcher) {
       next()
       return
     }
     if (!watcher.persistent) {
-      delete watchers[encodeURI(url)]
+      delete watchers[url]
     }
 
     const { fn, data } = watcher
@@ -179,11 +171,10 @@ export default class Xo extends EventEmitter {
     let url
 
     do {
-      url = `/api/${await generateToken()}${suffix}` //It seems can't add /xo/ here
+      url = `/api/${await generateToken()}${suffix}`
     } while (url in watchers)
-        //debug('generateToken url: %s', url)
-    //HACK: Either here add '/xo' or search with removal of /xo in url, I think the key should be token only in future and it should not be url depends
-    watchers[encodeURI(`/xo${url}`)] = {
+
+    watchers[url] = {
       data,
       fn,
     }
@@ -196,12 +187,12 @@ export default class Xo extends EventEmitter {
     { data = undefined, persistent = true } = {}
   ) {
     const { _httpRequestWatchers: watchers } = this
-    //debug('registerHttpRequestHandler url: %s', url)
+
     if (url in watchers) {
       throw new Error(`a handler is already registered for ${url}`)
     }
 
-    watchers[`/xo${url}`] = {
+    watchers[url] = {
       data,
       fn,
       persistent,
