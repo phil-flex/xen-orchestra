@@ -127,12 +127,6 @@ export default class Xo extends EventEmitter {
   // -----------------------------------------------------------------
 
   _handleHttpRequest(req, res, next) { //NOTE: /xo/api/ may goes here.
-    const options = {
-      url: 'apiURL',
-      json: true,
-      gzip: true, 
-      headers: {"connection": "keep-alive", "transfer-encoding": "chunked"}
-    }
     const { url } = req
     const { _httpRequestWatchers: watchers } = this
     //HACK: url in watches does not have /xo/ so remove it
@@ -140,8 +134,8 @@ export default class Xo extends EventEmitter {
     //const watchUrl = url //fix the url from generateToken
     //const watcher = watchers[watchUrl]
     //const watcher = watchers[url]
-    const fixUrl = url.replace('/xo/','/')
-    const watcher = watchers[fixUrl];
+    const noXoUrl = url.replace('/xo/','/')
+    const watcher = watchers[noXoUrl];
 
     log.debug(`_handleHttpRequest ${url}`)
 
@@ -150,8 +144,8 @@ export default class Xo extends EventEmitter {
       return
     }
     if (!watcher.persistent) {
-      log.debug(`delete watchers ${fixUrl}`)
-      delete watchers[fixUrl]
+      log.debug(`delete watchers ${noXoUrl}`)
+      delete watchers[noXoUrl]
     }
 
     const { fn, data } = watcher
