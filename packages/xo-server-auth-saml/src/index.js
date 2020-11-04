@@ -63,7 +63,7 @@ class AuthSamlXoPlugin {
       ...conf,
 
       // must match the callback URL
-      path: '/signin/saml/callback',
+      path: '/xo/signin/saml/callback',
     }
 
     if (loaded) {
