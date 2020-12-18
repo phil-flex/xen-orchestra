@@ -127,7 +127,8 @@ export default class Xo extends EventEmitter {
     //const watchUrl = url //fix the url from generateToken
     //const watcher = watchers[watchUrl]
     //const watcher = watchers[url]
-    const watcher = watchers[encodeURI(url)];
+    //const watcher = watchers[encodeURI(url)];
+    const watcher = watchers[url]
 
     //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
 
@@ -136,7 +137,8 @@ export default class Xo extends EventEmitter {
       return
     }
     if (!watcher.persistent) {
-      delete watchers[encodeURI(url)]
+      //delete watchers[encodeURI(url)]
+      delete watchers[url]
     }
 
     const { fn, data } = watcher
@@ -175,25 +177,23 @@ export default class Xo extends EventEmitter {
     } while (url in watchers)
         //debug('generateToken url: %s', url)
     //HACK: Either here add '/xo' or search with removal of /xo in url, I think the key should be token only in future and it should not be url depends
-    watchers[encodeURI(`/xo${url}`)] = {
+    //watchers[encodeURI(url)] = {
+    watchers[url] = {
       data,
       fn,
     }
     return url
   }
 
-  async registerHttpRequestHandler(
-    url,
-    fn,
-    { data = undefined, persistent = true } = {}
-  ) {
+  async registerHttpRequestHandler(url, fn, { data = undefined, persistent = true } = {}) {
     const { _httpRequestWatchers: watchers } = this
     //debug('registerHttpRequestHandler url: %s', url)
     if (url in watchers) {
       throw new Error(`a handler is already registered for ${url}`)
     }
 
-    watchers[encodeURI(`/xo${url}`)] = {
+    //watchers[encodeURI(url)] = {
+    watchers[url] = {
       data,
       fn,
       persistent,

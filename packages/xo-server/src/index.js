@@ -203,10 +203,7 @@ async function setUpPassport(express, xo, { authentication: authCfg, http: { coo
     }
   })
 
-  const PERMANENT_VALIDITY = ifDef(
-    authCfg.permanentCookieValidity,
-    parseDuration
-  )
+  const PERMANENT_VALIDITY = ifDef(authCfg.permanentCookieValidity, parseDuration)
   const SESSION_VALIDITY = ifDef(authCfg.sessionCookieValidity, parseDuration)
   const setToken = async (req, res, next) => {
     const { user, isPersistent } = req.session
@@ -250,8 +247,7 @@ async function setUpPassport(express, xo, { authentication: authCfg, http: { coo
         }
 
         req.session.user = { id: user.id, preferences: user.preferences }
-        req.session.isPersistent =
-          matches[1] === 'local' && req.body['remember-me'] === 'on'
+        req.session.isPersistent = matches[1] === 'local' && req.body['remember-me'] === 'on'
 
         if (user.preferences?.otp !== undefined) {
           return res.redirect(303, '/xo/signin-otp')
@@ -591,8 +587,7 @@ const setUpApi = (webServer, xo, config) => {
   webServer.on('upgrade', (req, socket, head) => {
     //if (req.url === '/api/') {
     if (req.url.substr(req.url.length - 5) === '/api/') {
-      webSocketServer.handleUpgrade(req, socket, head, ws =>
-        onConnection(ws, req)
+      webSocketServer.handleUpgrade(req, socket, head, ws => onConnection(ws, req))
       )
     }
   })
