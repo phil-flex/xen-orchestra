@@ -585,8 +585,10 @@ const setUpApi = (webServer, xo, config) => {
     })
   }
   webServer.on('upgrade', (req, socket, head) => {
-    //if (req.url === '/api/') {
-    if (req.url.substr(req.url.length - 5) === '/api/') {
+    //log.info(`webServer upgrade connection 1 (${req.url})`)
+    //log.info(`webServer upgrade connection 2 (${req.url.substr(req.url.length - 5)})`)
+    if (req.url === '/xo/api/') {
+    //if (req.url.substr(req.url.length - 5) === '/api/') {
       webSocketServer.handleUpgrade(req, socket, head, ws => onConnection(ws, req))
     }
   })
