@@ -130,8 +130,8 @@ export default class Xo extends EventEmitter {
     //const watcher = watchers[encodeURI(url)];
     const token = url.replace('/xo','').replace('/api/','')
     const watcher = watchers[token] //url has already has /xo/
-    log.info(`_handleHttpRequest url : ${url}, token : ${token}`)
-    log.info(`_handleHttpRequest watcher : ${watcher}`)
+    //log.info(`DEBUG: _handleHttpRequest url : ${url}, token : ${token}`)
+    //log.info(`DEBUG: _handleHttpRequest watcher : ${watcher}`)
     //debug('Debug watcher search-: url=%s, data=%s', encodeURI(url), watcher)
 
     if (!watcher) {
@@ -140,7 +140,7 @@ export default class Xo extends EventEmitter {
     }
     if (!watcher.persistent) {
       //delete watchers[encodeURI(url)]
-      log.info(`_handleHttpRequest delete watcher ${url}, token ${token}`)
+      //log.info(`DEBUG: _handleHttpRequest delete watcher ${url}, token ${token}`)
       delete watchers[token]
     }
 
@@ -181,13 +181,13 @@ export default class Xo extends EventEmitter {
     } while (token in watchers)
         //debug('generateToken url: %s', url)
     //watchers[encodeURI(url)] = {
-    log.info(`registerHttpRequest token ${token}`)
+    //log.info(`registerHttpRequest token ${token}`)
     watchers[`${token}`] = {
       data,
       fn,
     }
     url = `/api/${token}` //Can't add /xo/ here ?
-    log.info(`registerHttpRequest url ${url}`)
+    //log.info(`registerHttpRequest url ${url}`)
     return url
   }
 
@@ -197,10 +197,10 @@ export default class Xo extends EventEmitter {
     //log.info(`registerHttpRequestHandler urlsubstr : ${url.substr(4)}`) // /xo/
     let token
     token = url.replace('/xo','').replace('/api/','') // /xo/api/xxx --> xxx or /api/xxx --> xxx
-    //if (url.substr(4) === '/xo/') {
+    //if (url.substr(4) === '/xo/') { //it is not required to add /xo/ here
     //  url = `/xo${url}`
     //}
-    log.info(`registerHttpRequestHandler url ${url} token ${token}`)
+    //log.info(`registerHttpRequestHandler url ${url} token ${token}`)
     if (token in watchers) { //url has / already and it need to add /xo here since url don't have
       throw new Error(`a handler is already registered for ${url} token ${token}`)
     }
@@ -216,7 +216,7 @@ export default class Xo extends EventEmitter {
   async unregisterHttpRequestHandler(url) {
     let token
     token = url.replace('/xo','').replace('/api/','') // /xo/api/xxx --> xxx or /api/xxx --> xxx
-    log.info(`unregisterHttpRequestHandlerttpRequest url: ${url}, token: ${token}`)
+    //log.info(`unregisterHttpRequestHandlerttpRequest url: ${url}, token: ${token}`)
     delete this._httpRequestWatchers[`/xo${url}`] //it has not been tested
   }
 
