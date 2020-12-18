@@ -588,7 +588,6 @@ const setUpApi = (webServer, xo, config) => {
     //if (req.url === '/api/') {
     if (req.url.substr(req.url.length - 5) === '/api/') {
       webSocketServer.handleUpgrade(req, socket, head, ws => onConnection(ws, req))
-      )
     }
   })
 }
