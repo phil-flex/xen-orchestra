@@ -599,7 +599,7 @@ const setUpApi = (webServer, xo, config) => {
 
 // ===================================================================
 
-const CONSOLE_PROXY_PATH_RE = /^\/api\/consoles\/(.*)$/
+const CONSOLE_PROXY_PATH_RE = /^\/xo\/api\/consoles\/(.*)$/
 
 const setUpConsoleProxy = (webServer, xo) => {
   const webSocketServer = new WebSocket.Server({
