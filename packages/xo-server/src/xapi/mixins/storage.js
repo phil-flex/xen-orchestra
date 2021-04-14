@@ -1,13 +1,12 @@
-import createLogger from '@xen-orchestra/log'
-import { forEach, groupBy } from 'lodash'
-
-import { mapToArray } from '../../utils'
+import defer from 'golike-defer'
+import { createLogger } from '@xen-orchestra/log'
+import { filter, forEach, groupBy } from 'lodash'
 
 const log = createLogger('xo:storage')
 
 export default {
   _connectAllSrPbds(sr) {
-    return Promise.all(mapToArray(sr.$PBDs, pbd => this._plugPbd(pbd)))
+    return Promise.all(sr.$PBDs.map(pbd => this._plugPbd(pbd)))
   },
 
   async connectAllSrPbds(id) {
@@ -15,7 +14,7 @@ export default {
   },
 
   _disconnectAllSrPbds(sr) {
-    return Promise.all(mapToArray(sr.$PBDs, pbd => this._unplugPbd(pbd)))
+    return Promise.all(sr.$PBDs.map(pbd => this._unplugPbd(pbd)))
   },
 
   async disconnectAllSrPbds(id) {
@@ -111,5 +110,29 @@ export default {
     )
 
     return (await this.barrier(srRef)).uuid
+  },
+
+  // This function helps to reattach a forgotten NFS/iSCSI/HBA SR
+  @defer
+  async reattachSr($defer, { uuid, nameLabel, nameDescription, type, deviceConfig }) {
+    const srRef = await this.call('SR.introduce', uuid, nameLabel, nameDescription, type, 'user', true, {})
+    $defer.onFailure(() => this.forgetSr(srRef))
+
+    // XenCenter SR reattach:
+    // https://github.com/xenserver/xenadmin/blob/90e6cb0dc950ce747b7b6b689b0ad00cf28898d2/XenModel/Actions/SR/SrReattachAction.cs#L77-L99
+    const hosts = filter(this.objects.all, object => object.$type === 'host')
+    await Promise.all(
+      hosts.map(async host => {
+        const pbdRef = await this.call('PBD.create', {
+          host: host.$ref,
+          SR: srRef,
+          device_config: deviceConfig,
+        })
+        await this.call('PBD.plug', pbdRef)
+      })
+    )
+
+    const sr = await this.call('SR.get_record', srRef)
+    return sr.uuid
   },
 }

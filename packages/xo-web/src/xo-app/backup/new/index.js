@@ -11,6 +11,7 @@ import Tooltip from 'tooltip'
 import Upgrade from 'xoa-upgrade'
 import UserError from 'user-error'
 import ZstdChecker from 'zstd-checker'
+import { addSubscriptions, connectStore, generateRandomId, resolveId, resolveIds } from 'utils'
 import { Card, CardBlock, CardHeader } from 'card'
 import { constructSmartPattern, destructSmartPattern } from 'smart-backup'
 import { Container, Col, Row } from 'grid'
@@ -22,8 +23,7 @@ import { injectState, provideState } from 'reaclette'
 import { Map } from 'immutable'
 import { Number } from 'form'
 import { renderXoItemFromId, Remote } from 'render-xo-item'
-import { SelectProxy, SelectRemote, SelectSr, SelectVm } from 'select-objects'
-import { addSubscriptions, connectStore, generateRandomId, resolveId, resolveIds } from 'utils'
+import { SelectRemote, SelectSr, SelectVm } from 'select-objects'
 import {
   createBackupNgJob,
   createSchedule,
@@ -34,13 +34,14 @@ import {
   isSrWritable,
   subscribeRemotes,
 } from 'xo'
-import { flatten, includes, isEmpty, keyBy, map, mapValues, max, omit, some } from 'lodash'
+import { flatten, includes, isEmpty, map, mapValues, omit, some } from 'lodash'
 
 import NewSchedule from './new-schedule'
 import ReportWhen from './_reportWhen'
 import Schedules from './schedules'
 import SmartBackup from './smart-backup'
 import SelectSnapshotMode from './_selectSnapshotMode'
+import { RemoteProxy, RemoteProxyWarning } from './_remoteProxy'
 
 import getSettingsWithNonDefaultValue from '../_getSettingsWithNonDefaultValue'
 import { canDeltaBackup, constructPattern, destructPattern, FormFeedback, FormGroup, Input, Li, Ul } from './../utils'
@@ -142,6 +143,7 @@ const normalizeSettings = ({ copyMode, exportMode, offlineBackupActive, settings
   settings.map(setting =>
     defined(setting.copyRetention, setting.exportRetention, setting.snapshotRetention) !== undefined
       ? {
+          ...setting,
           copyRetention: copyMode ? setting.copyRetention : undefined,
           exportRetention: exportMode ? setting.exportRetention : undefined,
           snapshotRetention: snapshotMode && !offlineBackupActive ? setting.snapshotRetention : undefined,
@@ -159,8 +161,7 @@ const destructVmsPattern = pattern =>
       }
 
 // isRetentionLow returns the expected result when the 'fullInterval' is undefined.
-const isRetentionLow = (settings, retention) =>
-  retention < RETENTION_LIMIT || settings.getIn(['', 'fullInterval']) < RETENTION_LIMIT
+const isRetentionLow = (fullInterval, retention) => retention < RETENTION_LIMIT || fullInterval < RETENTION_LIMIT
 
 const checkRetentions = (schedule, { copyMode, exportMode, snapshotMode }) =>
   (!copyMode && !exportMode && !snapshotMode) ||
@@ -196,33 +197,6 @@ const getInitialState = ({ preSelectedVmIds, setHomeVmIdsSelection, suggestedExc
     vms: preSelectedVmIds,
   }
 }
-
-const RemoteProxyWarning = decorate([
-  addSubscriptions({
-    remotes: cb =>
-      subscribeRemotes(remotes => {
-        cb(keyBy(remotes, 'id'))
-      }),
-  }),
-  provideState({
-    computed: {
-      showWarning: (_, { id, proxyId, remotes = {} }) => {
-        const remote = remotes[id]
-        if (proxyId === null) {
-          proxyId = undefined
-        }
-        return remote !== undefined && remote.proxy !== proxyId
-      },
-    },
-  }),
-  injectState,
-  ({ state }) =>
-    state.showWarning ? (
-      <Tooltip content={_('remoteNotCompatibleWithSelectedProxy')}>
-        <Icon icon='alarm' color='text-danger' />
-      </Tooltip>
-    ) : null,
-])
 
 const DeleteOldBackupsFirst = ({ handler, handlerParam, value }) => (
   <ActionButton
@@ -448,17 +422,23 @@ const New = decorate([
         }
       },
       showScheduleModal: ({ saveSchedule }, storedSchedule = DEFAULT_SCHEDULE) => async (
-        { copyMode, exportMode, deltaMode, propSettings, settings = propSettings, snapshotMode },
+        { copyMode, exportMode, deltaMode, isDelta, propSettings, settings = propSettings, snapshotMode },
         { intl: { formatMessage } }
       ) => {
-        const modes = { copyMode, exportMode, snapshotMode }
+        const modes = { copyMode, isDelta, exportMode, snapshotMode }
         const schedule = await form({
           defaultValue: storedSchedule,
           render: props => (
             <NewSchedule
               missingRetentions={!checkRetentions(props.value, modes)}
               modes={modes}
-              showRetentionWarning={deltaMode && !isRetentionLow(settings, props.value.exportRetention)}
+              showRetentionWarning={
+                deltaMode &&
+                !isRetentionLow(
+                  defined(props.value.fullInterval, settings.getIn(['', 'fullInterval'])),
+                  props.value.exportRetention
+                )
+              }
               {...props}
             />
           ),
@@ -492,7 +472,7 @@ const New = decorate([
       },
       saveSchedule: (
         _,
-        { copyRetention, cron, enabled = true, exportRetention, id, name, snapshotRetention, timezone }
+        { copyRetention, cron, enabled = true, exportRetention, fullInterval, id, name, snapshotRetention, timezone }
       ) => ({ propSettings, schedules, settings = propSettings }) => ({
         schedules: {
           ...schedules,
@@ -506,8 +486,9 @@ const New = decorate([
           },
         },
         settings: settings.set(id, {
-          exportRetention,
           copyRetention,
+          exportRetention,
+          fullInterval,
           snapshotRetention,
         }),
       }),
@@ -536,8 +517,8 @@ const New = decorate([
         return getInitialState()
       },
       setCompression: (_, compression) => ({ compression }),
-      setProxy(_, proxy) {
-        this.state._proxyId = resolveId(proxy)
+      setProxy(_, id) {
+        this.state._proxyId = id
       },
       toggleDisplayAdvancedSettings: () => ({ displayAdvancedSettings }) => ({
         _displayAdvancedSettings: !displayAdvancedSettings,
@@ -595,7 +576,6 @@ const New = decorate([
       formId: generateId,
       inputConcurrencyId: generateId,
       inputFullIntervalId: generateId,
-      inputProxyId: generateId,
       inputTimeoutId: generateId,
 
       // In order to keep the user preference, the offline backup is kept in the DB
@@ -644,12 +624,21 @@ const New = decorate([
           get(() => hostsById[$container].version) || get(() => hostsById[poolsById[$container].master].version)
         ),
       selectedVmIds: state => resolveIds(state.vms),
-      showRetentionWarning: ({ deltaMode, propSettings, settings = propSettings, schedules }) =>
-        deltaMode &&
-        !isRetentionLow(
-          settings,
-          defined(max(Object.keys(schedules).map(key => settings.getIn([key, 'exportRetention']))), 0)
-        ),
+      showRetentionWarning: ({ deltaMode, propSettings, settings = propSettings, schedules }) => {
+        if (!deltaMode) {
+          return false
+        }
+
+        const globalFullInterval = settings.getIn(['', 'fullInterval'])
+        return some(
+          Object.keys(schedules),
+          key =>
+            !isRetentionLow(
+              defined(settings.getIn([key, 'fullInterval']), globalFullInterval),
+              settings.getIn([key, 'exportRetention'])
+            )
+        )
+      },
       srPredicate: ({ srs }) => sr => isSrWritable(sr) && !includes(srs, sr.id),
       remotePredicate: ({ proxyId, remotes }) => remote => {
         if (proxyId === null) {
@@ -661,6 +650,7 @@ const New = decorate([
         Map(get(() => job.settings)).map(setting =>
           defined(setting.copyRetention, setting.exportRetention, setting.snapshotRetention)
             ? {
+                ...setting,
                 copyRetention: defined(setting.copyRetention, DEFAULT_RETENTION),
                 exportRetention: defined(setting.exportRetention, DEFAULT_RETENTION),
                 snapshotRetention: defined(setting.snapshotRetention, DEFAULT_RETENTION),
@@ -896,12 +886,7 @@ const New = decorate([
                   </ActionButton>
                 </CardHeader>
                 <CardBlock>
-                  <FormGroup>
-                    <label htmlFor={state.inputProxyId}>
-                      <strong>{_('proxy')}</strong>
-                    </label>
-                    <SelectProxy id={state.inputProxyId} onChange={effects.setProxy} value={state.proxyId} />
-                  </FormGroup>
+                  <RemoteProxy onChange={effects.setProxy} value={state.proxyId} />
                   <ReportWhen
                     onChange={effects.setReportWhen}
                     required

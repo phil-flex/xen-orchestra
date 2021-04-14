@@ -292,7 +292,7 @@ const OPTIONS = {
       { labelId: 'homeSortByShared', sortBy: isSrShared, sortOrder: 'desc' },
       {
         labelId: 'homeSortByUsage',
-        sortBy: 'physical_usage',
+        sortBy: 'physicalUsageBySize',
         sortOrder: 'desc',
       },
       { labelId: 'homeSortByType', sortBy: 'SR_type', sortOrder: 'asc' },
@@ -456,6 +456,7 @@ const NoObjects = props =>
     mapValues(items, item => ({
       ...item,
       container: containers[item.$container || item.$pool],
+      physicalUsageBySize: item.type === 'SR' ? (item.size > 0 ? item.physical_usage / item.size : 0) : undefined,
     }))
   )
   // VMs are handled separately because we need to inject their 'vdisUsage'
@@ -1186,7 +1187,7 @@ export default class Home extends Component {
             <Button onClick={this._expandAll}>
               <Icon icon='nav' />
             </Button>{' '}
-            <DropdownButton bsStyle='info' title={homeItemsPerPage}>
+            <DropdownButton bsStyle='info' id='itemsPerPage' title={homeItemsPerPage}>
               {ITEMS_PER_PAGE_OPTIONS.map(nItems => (
                 <MenuItem key={nItems} onClick={() => this._setNItemsPerPage(nItems)}>
                   {nItems}

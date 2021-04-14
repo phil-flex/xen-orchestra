@@ -1,4 +1,6 @@
-import createLogger from '@xen-orchestra/log'
+import emitAsync from '@xen-orchestra/emit-async'
+import { createLogger } from '@xen-orchestra/log'
+
 import kindOf from 'kindof'
 import ms from 'ms'
 import schemaInspector from 'schema-inspector'
@@ -141,14 +143,14 @@ async function resolveParams(method, params) {
 // -------------------------------------------------------------------
 
 export default class Api {
-  constructor(xo) {
+  constructor(app) {
     this._logger = null
     this._methods = { __proto__: null }
-    this._xo = xo
+    this._app = app
 
     this.addApiMethods(methods)
-    xo.on('start', async () => {
-      this._logger = await xo.getLogger('api')
+    app.hooks.on('start', async () => {
+      this._logger = await app.getLogger('api')
     })
   }
 
@@ -214,7 +216,7 @@ export default class Api {
   }
 
   async callApiMethod(session, name, params = {}) {
-    const xo = this._xo
+    const app = this._app
     const startTime = Date.now()
 
     const method = this._methods[name]
@@ -234,11 +236,11 @@ export default class Api {
         },
       }
 
-      let obj = xo
+      let obj = app
       do {
         Object.getOwnPropertyNames(obj).forEach(name => {
           if (!(name in descriptors)) {
-            descriptors[name] = getBoundPropertyDescriptor(obj, name, xo)
+            descriptors[name] = getBoundPropertyDescriptor(obj, name, app)
           }
         })
       } while ((obj = Reflect.getPrototypeOf(obj)) !== null)
@@ -248,7 +250,7 @@ export default class Api {
 
     // Fetch and inject the current user.
     const userId = session.get('user_id', undefined)
-    context.user = userId && (await xo.getUser(userId))
+    context.user = userId && (await app.getUser(userId))
     const userName = context.user ? context.user.email : '(unknown user)'
 
     const data = {
@@ -261,7 +263,16 @@ export default class Api {
       timestamp: Date.now(),
     }
 
-    xo.emit('xo:preCall', data)
+    await emitAsync.call(
+      app,
+      {
+        onError(error) {
+          log.warn('xo:preCall listener failure', { error })
+        },
+      },
+      'xo:preCall',
+      data
+    )
 
     try {
       await checkPermission.call(context, method)
@@ -302,13 +313,13 @@ export default class Api {
 
       // it's a special case in which the user is defined at the end of the call
       if (data.method === 'session.signIn') {
-        const { id, email } = await xo.getUser(session.get('user_id'))
+        const { id, email } = await app.getUser(session.get('user_id'))
         data.userId = id
         data.userName = email
       }
 
       const now = Date.now()
-      xo.emit('xo:postCall', {
+      app.emit('xo:postCall', {
         ...data,
         duration: now - data.timestamp,
         result,
@@ -320,7 +331,7 @@ export default class Api {
       const serializedError = serializeError(error)
 
       const now = Date.now()
-      xo.emit('xo:postCall', {
+      app.emit('xo:postCall', {
         ...data,
         duration: now - data.timestamp,
         error: serializedError,
@@ -331,10 +342,13 @@ export default class Api {
         Date.now() - startTime
       )}] =!> ${error}`
 
-      // 2020-07-10: Work-around: many kinds of error can be triggered by this
-      // method, which can generates a lot of logs due to the fact that xo-web
-      // uses 5s active subscriptions to call it
-      if (name !== 'pool.listMissingPatches') {
+      // 2020-07-10: Work-around: many kinds of error can be triggered by
+      // 'pool.listMissingPatches' method, which can generates a lot of logs due to the fact that xo-web
+      // uses 5s active subscriptions to call it.
+      // 2021-02-11: Work-around: ECONNREFUSED error can be triggered by
+      // 'host.stats' method because there is no connection to the host during a
+      // toolstack restart and xo-web may call it often
+      if (name !== 'pool.listMissingPatches' && name !== 'host.stats') {
         this._logger.error(message, {
           ...data,
           duration: Date.now() - startTime,
@@ -342,7 +356,7 @@ export default class Api {
         })
       }
 
-      if (xo._config.verboseLogsOnErrors) {
+      if (app.config.get('verboseLogsOnErrors')) {
         log.warn(message, { error })
       } else {
         log.warn(`${userName} | ${name}(...) [${ms(Date.now() - startTime)}] =!> ${error}`)
@@ -352,7 +366,7 @@ export default class Api {
       if (xoError) {
         throw xoError(error.params, ref => {
           try {
-            return xo.getObject(ref).id
+            return app.getObject(ref).id
           } catch (e) {
             return ref
           }

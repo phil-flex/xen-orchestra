@@ -1,6 +1,6 @@
-import createLogger from '@xen-orchestra/log'
 import humanFormat from 'human-format'
 import moment from 'moment-timezone'
+import { createLogger } from '@xen-orchestra/log'
 import { forEach, groupBy, startCase } from 'lodash'
 import { get } from '@xen-orchestra/defined'
 import pkg from '../package'
@@ -172,7 +172,7 @@ const getMarkdown = (task, props) => MARKDOWN_BY_TYPE[task.data?.type]?.(task, p
 
 const toMarkdown = parts => {
   const lines = []
-  let indentLevel = 0
+  let indentLevel = -1
 
   const helper = part => {
     if (typeof part === 'string') {
@@ -193,7 +193,13 @@ const toMarkdown = parts => {
 class BackupReportsXoPlugin {
   constructor(xo) {
     this._xo = xo
-    this._report = this._report.bind(this)
+    this._eventListener = async (...args) => {
+      try {
+        this._report(...args)
+      } catch (error) {
+        logger.warn(error)
+      }
+    }
   }
 
   configure({ toMails, toXmpp }) {
@@ -202,7 +208,7 @@ class BackupReportsXoPlugin {
   }
 
   load() {
-    this._xo.on('job:terminated', this._report)
+    this._xo.on('job:terminated', this._eventListener)
   }
 
   test({ runId }) {
@@ -210,50 +216,46 @@ class BackupReportsXoPlugin {
   }
 
   unload() {
-    this._xo.removeListener('job:terminated', this._report)
+    this._xo.removeListener('job:terminated', this._eventListener)
   }
 
   async _report(runJobId, { type, status } = {}, force) {
     const xo = this._xo
-    try {
-      if (type === 'call') {
-        return this._legacyVmHandler(status)
-      }
-
-      const log = await xo.getBackupNgLogs(runJobId)
-      if (log === undefined) {
-        throw new Error(`no log found with runId=${JSON.stringify(runJobId)}`)
-      }
-
-      const reportWhen = log.data.reportWhen
-      if (
-        !force &&
-        (reportWhen === 'never' ||
-          // Handle improper value introduced by:
-          // https://github.com/vatesfr/xen-orchestra/commit/753ee994f2948bbaca9d3161eaab82329a682773#diff-9c044ab8a42ed6576ea927a64c1ec3ebR105
-          reportWhen === 'Never' ||
-          (reportWhen === 'failure' && log.status === 'success'))
-      ) {
-        return
-      }
-
-      const [job, schedule] = await Promise.all([
-        await xo.getJob(log.jobId),
-        await xo.getSchedule(log.scheduleId).catch(error => {
-          logger.warn(error)
-        }),
-      ])
-
-      if (job.type === 'backup') {
-        return this._ngVmHandler(log, job, schedule, force)
-      } else if (job.type === 'metadataBackup') {
-        return this._metadataHandler(log, job, schedule, force)
-      }
-
-      throw new Error(`Unknown backup job type: ${job.type}`)
-    } catch (error) {
-      logger.warn(error)
+    if (type === 'call') {
+      return this._legacyVmHandler(status)
     }
+
+    const log = await xo.getBackupNgLogs(runJobId)
+    if (log === undefined) {
+      throw new Error(`no log found with runId=${JSON.stringify(runJobId)}`)
+    }
+
+    const reportWhen = log.data.reportWhen
+    if (
+      !force &&
+      (reportWhen === 'never' ||
+        // Handle improper value introduced by:
+        // https://github.com/vatesfr/xen-orchestra/commit/753ee994f2948bbaca9d3161eaab82329a682773#diff-9c044ab8a42ed6576ea927a64c1ec3ebR105
+        reportWhen === 'Never' ||
+        (reportWhen === 'failure' && log.status === 'success'))
+    ) {
+      return
+    }
+
+    const [job, schedule] = await Promise.all([
+      await xo.getJob(log.jobId),
+      await xo.getSchedule(log.scheduleId).catch(error => {
+        logger.warn(error)
+      }),
+    ])
+
+    if (job.type === 'backup') {
+      return this._ngVmHandler(log, job, schedule, force)
+    } else if (job.type === 'metadataBackup') {
+      return this._metadataHandler(log, job, schedule, force)
+    }
+
+    throw new Error(`Unknown backup job type: ${job.type}`)
   }
 
   async _metadataHandler(log, { name: jobName }, schedule, force) {
@@ -373,7 +375,7 @@ class BackupReportsXoPlugin {
       })
     }
 
-    const failedVmsText = []
+    const failedTasksText = []
     const skippedVmsText = []
     const successfulVmsText = []
     const interruptedVmsText = []
@@ -389,15 +391,53 @@ class BackupReportsXoPlugin {
         continue
       }
 
-      const vmId = taskLog.data.id
+      const { type, id } = taskLog.data ?? {}
+      if (taskLog.message === 'get SR record' || taskLog.message === 'get remote adapter') {
+        ++nFailures
+        failedTasksText.push(
+          // It will ensure that it will never be in a nested list
+          ''
+        )
+
+        try {
+          if (type === 'SR') {
+            const { name_label: name, uuid } = xo.getObject(id)
+            failedTasksText.push(`### ${name}`, '', `- **UUID**: ${uuid}`)
+            nagiosText.push(`[(${type} failed) ${name} : ${taskLog.result.message} ]`)
+          } else {
+            const { name } = await xo.getRemote(id)
+            failedTasksText.push(`### ${name}`, '', `- **UUID**: ${id}`)
+            nagiosText.push(`[(${type} failed) ${name} : ${taskLog.result.message} ]`)
+          }
+        } catch (error) {
+          logger.warn(error)
+          failedTasksText.push(`### ${UNKNOWN_ITEM}`, '', `- **UUID**: ${id}`)
+          nagiosText.push(`[(${type} failed) ${id} : ${taskLog.result.message} ]`)
+        }
+
+        failedTasksText.push(
+          `- **Type**: ${type}`,
+          ...getTemporalDataMarkdown(taskLog.end, taskLog.start, formatDate),
+          ...getWarningsMarkdown(taskLog.warnings),
+          `- **Error**: ${taskLog.result.message}`
+        )
+        continue
+      }
+
+      if (type !== 'VM') {
+        continue
+      }
+
       let vm
       try {
-        vm = xo.getObject(vmId)
+        vm = xo.getObject(id)
       } catch (e) {}
       const text = [
+        // It will ensure that it will never be in a nested list
+        '',
         `### ${vm !== undefined ? vm.name_label : 'VM not found'}`,
         '',
-        `- **UUID**: ${vm !== undefined ? vm.uuid : vmId}`,
+        `- **UUID**: ${vm !== undefined ? vm.uuid : id}`,
         ...getTemporalDataMarkdown(taskLog.end, taskLog.start, formatDate),
         ...getWarningsMarkdown(taskLog.warnings),
       ]
@@ -508,14 +548,14 @@ class BackupReportsXoPlugin {
           nagiosText.push(`[(Skipped) ${vm !== undefined ? vm.name_label : 'undefined'} : ${taskLog.result.message} ]`)
         } else {
           ++nFailures
-          failedVmsText.push(...text, `- **Error**: ${taskLog.result.message}`)
+          failedTasksText.push(...text, `- **Error**: ${taskLog.result.message}`)
 
           nagiosText.push(`[(Failed) ${vm !== undefined ? vm.name_label : 'undefined'} : ${taskLog.result.message} ]`)
         }
       } else {
         if (taskLog.status === 'failure') {
           ++nFailures
-          failedVmsText.push(...text, ...subText)
+          failedTasksText.push(...text, ...subText)
           nagiosText.push(`[${vm !== undefined ? vm.name_label : 'undefined'}: (failed)[${failedSubTasks.toString()}]]`)
         } else if (taskLog.status === 'interrupted') {
           ++nInterrupted
@@ -527,8 +567,8 @@ class BackupReportsXoPlugin {
       }
     }
 
-    const nVms = log.tasks.length
-    const nSuccesses = nVms - nFailures - nSkipped - nInterrupted
+    const nTasks = log.tasks.length
+    const nSuccesses = nTasks - nFailures - nSkipped - nInterrupted
     const markdown = [
       `##  Global status: ${log.status}`,
       '',
@@ -536,7 +576,7 @@ class BackupReportsXoPlugin {
       `- **Run ID**: ${log.id}`,
       `- **mode**: ${mode}`,
       ...getTemporalDataMarkdown(log.end, log.start, formatDate),
-      `- **Successes**: ${nSuccesses} / ${nVms}`,
+      `- **Successes**: ${nSuccesses} / ${nTasks}`,
       globalTransferSize !== 0 && `- **Transfer size**: ${formatSize(globalTransferSize)}`,
       globalMergeSize !== 0 && `- **Merge size**: ${formatSize(globalMergeSize)}`,
       ...getWarningsMarkdown(log.warnings),
@@ -544,7 +584,7 @@ class BackupReportsXoPlugin {
     ]
 
     if (nFailures !== 0) {
-      markdown.push('---', '', `## ${nFailures} Failure${nFailures === 1 ? '' : 's'}`, '', ...failedVmsText)
+      markdown.push('---', '', `## ${nFailures} Failure${nFailures === 1 ? '' : 's'}`, '', ...failedTasksText)
     }
 
     if (nSkipped !== 0) {

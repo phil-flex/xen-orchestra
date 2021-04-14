@@ -13,12 +13,10 @@ export class XoError extends BaseError {}
 // -------------------------------------------------------------------
 
 export default class Xo extends JsonRpcWebSocketClient {
-  constructor(opts) {
-    const url = opts != null ? opts.url : '.'
-    //NOTES: it is the path for client to access /api/ to xo-server
-    super(`${trimEnd(url, '/')}/xo/api/`)
+  constructor({ credentials, url = '.' } = {}) {
+    super(`${trimEnd(url, '/')}/api/`)
 
-    this._credentials = opts != null ? opts.credentials : null
+    this._credentials = credentials
     this._user = null
 
     this.on(OPEN, () => {

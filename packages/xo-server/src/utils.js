@@ -1,4 +1,5 @@
 import base64url from 'base64url'
+import fastXmlParser from 'fast-xml-parser'
 import forEach from 'lodash/forEach'
 import has from 'lodash/has'
 import highland from 'highland'
@@ -7,13 +8,15 @@ import keys from 'lodash/keys'
 import multiKeyHashInt from 'multikey-hash'
 import pick from 'lodash/pick'
 import tmp from 'tmp'
-import xml2js from 'xml2js'
+import { createLogger } from '@xen-orchestra/log'
 import { randomBytes } from 'crypto'
-import { dirname, resolve } from 'path'
+import { resolve } from 'path'
 import { utcFormat, utcParse } from 'd3-time-format'
-import { fromCallback, pAll, pReflect, promisify } from 'promise-toolbox'
+import { fromCallback, promisify } from 'promise-toolbox'
 
 import { type SimpleIdPattern } from './utils'
+
+const log = createLogger('xo:server:utils')
 
 // ===================================================================
 
@@ -53,19 +56,6 @@ export function extractProperty(obj, prop) {
 
 // -------------------------------------------------------------------
 
-// Returns the first defined (non-undefined) value.
-export const firstDefined = function () {
-  const n = arguments.length
-  for (let i = 0; i < n; ++i) {
-    const arg = arguments[i]
-    if (arg !== undefined) {
-      return arg
-    }
-  }
-}
-
-// -------------------------------------------------------------------
-
 export const getUserPublicProperties = user =>
   pick(user.properties || user, 'authProviders', 'id', 'email', 'groups', 'permission', 'preferences')
 
@@ -95,33 +85,21 @@ export const generateToken = (randomBytes => {
 
 // -------------------------------------------------------------------
 
-export const formatXml = (function () {
-  const builder = new xml2js.Builder({
-    headless: true,
-  })
-
-  return (...args) => builder.buildObject(...args)
-})()
-
 export const parseXml = (function () {
   const opts = {
-    mergeAttrs: true,
-    explicitArray: false,
+    attributeNamePrefix: '',
+    ignoreAttributes: false,
+    parseNodeValue: false,
+    parseAttributeValue: false,
   }
 
   return xml => {
-    let result
-
-    // xml2js.parseString() use a callback for synchronous code.
-    xml2js.parseString(xml, opts, (error, result_) => {
-      if (error) {
-        throw error
-      }
-
-      result = result_
-    })
-
-    return result
+    try {
+      return fastXmlParser.parse(Buffer.isBuffer(xml) ? xml.toString() : xml, opts, true)
+    } catch (error) {
+      log.warn('parseXml', { error, xml })
+      return ''
+    }
   }
 })()
 
@@ -168,21 +146,7 @@ export const noop = () => {}
 
 // -------------------------------------------------------------------
 
-// Given a collection (array or object) which contains promises,
-// return a promise that is fulfilled when all the items in the
-// collection are either fulfilled or rejected.
-//
-// This promise will be fulfilled with a collection (of the same type,
-// array or object) containing promise inspections.
-//
-// Usage: pSettle(promises) or promises::pSettle()
-export function pSettle(promises) {
-  return (this || promises)::pAll(p => Promise.resolve(p)::pReflect())
-}
-
-// -------------------------------------------------------------------
-
-export { pAll, pDelay, pFinally, pFromCallback, pReflect, promisify, promisifyAll } from 'promise-toolbox'
+export { pDelay, pFromCallback, pReflect, promisify, promisifyAll } from 'promise-toolbox'
 
 // -------------------------------------------------------------------
 
@@ -217,11 +181,6 @@ export const popProperty = obj => {
 
 // -------------------------------------------------------------------
 
-// resolve a relative path from a file
-export const resolveRelativeFromFile = (file, path) => resolve('/', dirname(file), path).slice(1)
-
-// -------------------------------------------------------------------
-
 // Format a date in ISO 8601 in a safe way to be used in filenames
 // (even on Windows).
 export const safeDateFormat = utcFormat('%Y%m%dT%H%M%SZ')
@@ -237,7 +196,6 @@ export { default as forEach } from 'lodash/forEach'
 export { default as isEmpty } from 'lodash/isEmpty'
 export { default as isInteger } from 'lodash/isInteger'
 export { default as isObject } from 'lodash/isObject'
-export { default as mapToArray } from 'lodash/map'
 
 // -------------------------------------------------------------------
 
@@ -339,11 +297,6 @@ export const throwFn = error => () => {
 // -------------------------------------------------------------------
 
 export const tmpDir = () => fromCallback(tmp.dir)
-
-// -------------------------------------------------------------------
-
-// Wrap a value in a function.
-export const wrap = value => () => value
 
 // -------------------------------------------------------------------
 

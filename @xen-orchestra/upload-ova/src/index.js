@@ -188,7 +188,6 @@ export async function upload(args) {
   let keys, key, url
   if (isObject(result) && (keys = getKeys(result)).length === 1) {
     key = keys[0]
-
     if (key === '$sendTo') {
       const formData = new FormData()
       if (data.tables !== undefined) {

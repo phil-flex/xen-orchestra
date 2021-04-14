@@ -1,4 +1,4 @@
-import asyncMap from '@xen-orchestra/async-map'
+import asyncMapSettled from '@xen-orchestra/async-map/legacy'
 import synchronized from 'decorator-synchronized'
 import { format, parse } from 'xo-remote-parser'
 import { getHandler } from '@xen-orchestra/fs'
@@ -7,7 +7,6 @@ import { noSuchObject } from 'xo-common/api-errors'
 
 import * as sensitiveValues from '../sensitive-values'
 import patch from '../patch'
-import { mapToArray } from '../utils'
 import { Remotes } from '../models/remote'
 
 // ===================================================================
@@ -18,23 +17,22 @@ const obfuscateRemote = ({ url, ...remote }) => {
 }
 
 export default class {
-  constructor(xo, { remoteOptions }) {
+  constructor(app) {
     this._handlers = { __proto__: null }
-    this._remoteOptions = remoteOptions
     this._remotes = new Remotes({
-      connection: xo._redis,
+      connection: app._redis,
       prefix: 'xo:remote',
       indexes: ['enabled'],
     })
     this._remotesInfo = {}
-    this._xo = xo
+    this._app = app
 
-    xo.on('clean', () => this._remotes.rebuildIndexes())
-    xo.on('start', async () => {
-      xo.addConfigManager(
+    app.hooks.on('clean', () => this._remotes.rebuildIndexes())
+    app.hooks.on('start', async () => {
+      app.addConfigManager(
         'remotes',
         () => this._remotes.get(),
-        remotes => Promise.all(mapToArray(remotes, remote => this._remotes.update(remote)))
+        remotes => Promise.all(remotes.map(remote => this._remotes.update(remote)))
       )
 
       const remotes = await this._remotes.get()
@@ -42,7 +40,7 @@ export default class {
         ignoreErrors.call(this.updateRemote(remote.id, {}))
       })
     })
-    xo.on('stop', async () => {
+    app.hooks.on('stop', async () => {
       const handlers = this._handlers
       for (const id in handlers) {
         try {
@@ -70,7 +68,7 @@ export default class {
     const handlers = this._handlers
     let handler = handlers[id]
     if (handler === undefined) {
-      handler = getHandler(remote, this._remoteOptions)
+      handler = getHandler(remote, this._app.config.get('remoteOptions'))
 
       try {
         await handler.sync()
@@ -87,10 +85,11 @@ export default class {
   }
 
   async testRemote(remoteId) {
-    const remote = await this._getRemote(remoteId)
+    const remote = await this.getRemoteWithCredentials(remoteId)
+
     const { readRate, writeRate, ...answer } =
       remote.proxy !== undefined
-        ? await this._xo.callProxyMethod(remote.proxy, 'remote.test', {
+        ? await this._app.callProxyMethod(remote.proxy, 'remote.test', {
             remote,
           })
         : await this.getRemoteHandler(remoteId).then(handler => handler.test())
@@ -102,10 +101,15 @@ export default class {
         writeRate,
       }
       await this._updateRemote(remoteId, {
+        error: '',
         benchmarks:
           remote.benchmarks !== undefined
             ? [...remote.benchmarks.slice(-49), benchmark] // store 50 benchmarks
             : [benchmark],
+      })
+    } else {
+      await this._updateRemote(remoteId, {
+        error: answer.error,
       })
     }
 
@@ -114,14 +118,14 @@ export default class {
 
   async getAllRemotesInfo() {
     const remotesInfo = this._remotesInfo
-    await asyncMap(this._remotes.get(), async remote => {
+    await asyncMapSettled(this._remotes.get(), async remote => {
       if (!remote.enabled) {
         return
       }
 
       const promise =
         remote.proxy !== undefined
-          ? this._xo.callProxyMethod(remote.proxy, 'remote.getInfo', {
+          ? this._app.callProxyMethod(remote.proxy, 'remote.getInfo', {
               remote,
             })
           : this.getRemoteHandler(remote.id).then(handler => handler.getInfo())
@@ -150,8 +154,12 @@ export default class {
     return remote.properties
   }
 
-  getRemoteWithCredentials(id) {
-    return this._getRemote(id)
+  async getRemoteWithCredentials(id) {
+    const remote = await this._getRemote(id)
+    if (!remote.enabled) {
+      throw new Error('remote is disabled')
+    }
+    return remote
   }
 
   getRemote(id) {
